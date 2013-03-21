@@ -1,0 +1,29 @@
+{
+  "name": "junqi",
+  "description": "JSONiq Implementation in Pure JavaScript",
+  "author": "Thomas S. Bradford",
+  "version": "0.0.1",
+  "homepage": "http://www.junqi.org/",
+  "main": "index.js",
+  "keywords": ["javascript", "json", "query", "language", "jsoniq"],
+  "contributors": [
+    { "name": "Thom Bradford", "email": "thom@kodefood.it" },
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kode4food/junqi.git"
+  },
+  "scripts": {
+    "build": "node build.js; nodeunit test"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "jison": "0.3.x",
+    "uglify-js": "2.2.x",
+    "nodeunit": "0.7.x"
+  },
+  "engines": {
+    "node": "*"
+  }
+}
