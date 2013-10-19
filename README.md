@@ -93,6 +93,3 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 [objeq]     https://github.com/agilosoftware/objeq
 [jsoniq]:   http://www.jsoniq.org/
-[tester]:   http://www.kode4food.it/js/junqi/index.html
-[api]:      https://github.com/kode4food/junqi/wiki/API-Reference
-[language]: https://github.com/kode4food/junqi/wiki/Language-Reference

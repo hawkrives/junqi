@@ -6,8 +6,6 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-var ObjeqParser = require('./objeq-parser').Parser;
-
 var CURRENT_VERSION = "0.0.1";
 
 // Use the prototypes rather than trusting instances
@@ -17,11 +15,31 @@ var slice = Array.prototype.slice;
 var splice = Array.prototype.splice;
 
 var parserClasses = {
-  "objeq": ObjeqParser
 };
 
+function loadParser(language) {
+  if ( !/^[a-zA-Z]+$/.test(language) ) {
+    throw new Error("Invalid language name specified '" + language + "'");
+  }
+
+  try {
+    var mod = require('./' + language + '-parser');
+    if ( !mod.Parser ) {
+      throw new Error("Parser not exported by module");
+    }
+    return mod.Parser;
+  }
+  catch ( err ) {
+    throw new Error("Language '" + language + "' not supported");
+  }
+}
+
 function createParser(language) {
-  return new parserClasses[language]();
+  var parserClass = parserClasses[language];
+  if ( !parserClass ) {
+    parserClass = parserClasses[language] = loadParser(language);
+  }
+  return new parserClass();
 }
 
 // Utility Functions ********************************************************
@@ -44,16 +62,16 @@ var ext = {
 
 function registerExtension(name, func) {
   var hash = typeof name === 'object' ? name : {};
-  if (typeof name === 'string' && typeof func === 'function') {
+  if ( typeof name === 'string' && typeof func === 'function' ) {
     hash[name] = func;
   }
-  for (var key in hash) {
-    if (!hash.hasOwnProperty(key)) {
+  for ( var key in hash ) {
+    if ( !hash.hasOwnProperty(key) ) {
       continue;
     }
 
     var value = hash[key];
-    if (typeof key === 'string' && typeof value === 'function') {
+    if ( typeof key === 'string' && typeof value === 'function' ) {
       ext[key.toLowerCase()] = value;
     }
   }
@@ -61,10 +79,10 @@ function registerExtension(name, func) {
 
 function getExtension(name) {
   var func = ext[name.toLowerCase()];
-  if (typeof func === 'function') {
-    return func;
+  if ( typeof func !== 'function' ) {
+    throw new Error("Extension '" + name + "' does not exist!");
   }
-  throw new Error("Extension '" + name + "' does not exist!");
+  return func;
 }
 
 // 'Compilation' Functions **************************************************
@@ -73,7 +91,7 @@ var EmptyArray = [];
 
 function arrayEvalTemplate(items) {
   var template = [];
-  for (var i = 0, ilen = items.length; i < ilen; i++) {
+  for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
     var item = items[i], isNode = Array.isArray(item) && item.isNode;
     template.push(isNode ? createEvaluator(item) : item);
   }
@@ -84,20 +102,21 @@ function evalPath(evalRoot, pathComponents) {
   var path = arrayEvalTemplate(pathComponents);
   return function _path(ctx, aliases, obj) {
     var value = evalRoot(ctx, aliases, obj);
-    for (var i = 0, ilen = path.length; i < ilen; i++) {
+    for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
       // If we're drilling in, resolve the first Item
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
+      if ( Array.isArray(value) ) {
+        if ( value.length === 0 ) {
           return null;
         }
         value = value[0];
       }
-      if (value === null || value === undefined) {
+      if ( value === null || value === undefined ) {
         return value;
       }
 
       var comp = path[i]
         , key = typeof comp === 'function' ? comp(ctx, aliases, obj) : comp;
+
       value = value[key];
     }
     return value;
@@ -129,16 +148,16 @@ function evalLocalPath(pathComponents) {
 }
 
 function createEvaluator(node) {
-  if (!Array.isArray(node) || !node.isNode) {
+  if ( !Array.isArray(node) || !node.isNode ) {
     return node;
   }
 
   // Resolving Operators
   var op = node[0];
-  switch (op) {
+  switch ( op ) {
     case 'path':
       var type = node[1];
-      switch (type) {
+      switch ( type ) {
         case 'arg':
           return evalArgPath(node[2], node.slice(3));
         case 'local':
@@ -163,7 +182,7 @@ function createEvaluator(node) {
   var n1 = createEvaluator(node[1]), n1Eval, n1Lit;
   typeof n1 === 'function' ? n1Eval = n1 : n1Lit = n1;
 
-  switch (op) {
+  switch ( op ) {
     case 'not':
       return evalNOT();
     case 'neg':
@@ -174,7 +193,7 @@ function createEvaluator(node) {
   var n2 = createEvaluator(node[2]), n2Eval, n2Lit;
   typeof n2 === 'function' ? n2Eval = n2 : n2Lit = n2;
 
-  switch (op) {
+  switch ( op ) {
     case 'and':
       return evalAND();
     case 'or':
@@ -210,7 +229,7 @@ function createEvaluator(node) {
   }
 
   // Ternary Operator
-  if (op === 'tern') {
+  if ( op === 'tern' ) {
     var n3 = createEvaluator(node[3]), n3Eval, n3Lit;
     typeof n3 === 'function' ? n3Eval = n3 : n3Lit = n3;
     return evalTern();
@@ -223,7 +242,7 @@ function createEvaluator(node) {
 
   function objectEvalTemplate(hash) {
     var template = {};
-    for (var key in hash) {
+    for ( var key in hash ) {
       var item = hash[key], isNode = Array.isArray(item) && item.isNode;
       template[key] = isNode ? createEvaluator(item) : item;
     }
@@ -233,9 +252,14 @@ function createEvaluator(node) {
   function evalObj(template) {
     return function _obj(ctx, aliases, obj) {
       var result = {};
-      for (var key in template) {
+      for ( var key in template ) {
         var item = template[key];
-        result[key] = typeof item === 'function' ? item(ctx, aliases, obj) : item;
+        if ( typeof item === 'function' ) {
+          result[key] = item(ctx, aliases, obj);
+        }
+        else {
+          result[key] = item;
+        }
       }
       return result;
     };
@@ -244,9 +268,14 @@ function createEvaluator(node) {
   function evalArr(template) {
     return function _arr(ctx, aliases, obj) {
       var result = [];
-      for (var i = 0, ilen = template.length; i < ilen; i++) {
+      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
         var item = template[i];
-        result.push(typeof item === 'function' ? item(ctx, aliases, obj) : item);
+        if ( typeof item === 'function' ) {
+          result.push(item(ctx, aliases, obj));
+        }
+        else {
+          result.push(item);
+        }
       }
       return result;
     };
@@ -255,16 +284,21 @@ function createEvaluator(node) {
   function evalFunc(func, template) {
     return function _func(ctx, aliases, obj) {
       var funcArgs = [];
-      for (var i = 0, ilen = template.length; i < ilen; i++) {
+      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
         var item = template[i];
-        funcArgs.push(typeof item === 'function' ? item(ctx, aliases, obj) : item);
+        if ( typeof item === 'function' ) {
+          funcArgs.push(item(ctx, aliases, obj));
+        }
+        else {
+          funcArgs.push(item);
+        }
       }
       return func.apply(obj, [ctx].concat(funcArgs));
     };
   }
 
   function evalNOT() {
-    if (!n1Eval) {
+    if ( !n1Eval ) {
       return !n1Lit;
     }
     return function _not(ctx, aliases, obj) {
@@ -273,7 +307,7 @@ function createEvaluator(node) {
   }
 
   function evalNEG() {
-    if (!n1Eval) {
+    if ( !n1Eval ) {
       return -n1Lit;
     }
     return function _neg(ctx, aliases, obj) {
@@ -282,7 +316,7 @@ function createEvaluator(node) {
   }
 
   function evalAND() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit && n2Lit;
     }
     return function _and(ctx, aliases, obj) {
@@ -292,7 +326,7 @@ function createEvaluator(node) {
   }
 
   function evalOR() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit || n2Lit;
     }
     return function _or(ctx, aliases, obj) {
@@ -302,7 +336,7 @@ function createEvaluator(node) {
   }
 
   function evalADD() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit + n2Lit;
     }
     return function _add(ctx, aliases, obj) {
@@ -313,7 +347,7 @@ function createEvaluator(node) {
   }
 
   function evalSUB() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit - n2Lit;
     }
     return function _sub(ctx, aliases, obj) {
@@ -324,7 +358,7 @@ function createEvaluator(node) {
   }
 
   function evalMUL() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit * n2Lit;
     }
     return function _mul(ctx, aliases, obj) {
@@ -335,7 +369,7 @@ function createEvaluator(node) {
   }
 
   function evalDIV() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit / n2Lit;
     }
     return function _div(ctx, aliases, obj) {
@@ -346,7 +380,7 @@ function createEvaluator(node) {
   }
 
   function evalMOD() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit % n2Lit;
     }
     return function _mod(ctx, aliases, obj) {
@@ -357,7 +391,7 @@ function createEvaluator(node) {
   }
 
   function evalEQ() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit == n2Lit;
     }
     return function _eq(ctx, aliases, obj) {
@@ -368,7 +402,7 @@ function createEvaluator(node) {
   }
 
   function evalNEQ() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit != n2Lit;
     }
     return function _neq(ctx, aliases, obj) {
@@ -379,7 +413,7 @@ function createEvaluator(node) {
   }
 
   function evalGT() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit > n2Lit;
     }
     return function _gt(ctx, aliases, obj) {
@@ -390,7 +424,7 @@ function createEvaluator(node) {
   }
 
   function evalGTE() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit >= n2Lit;
     }
     return function _gte(ctx, aliases, obj) {
@@ -401,7 +435,7 @@ function createEvaluator(node) {
   }
 
   function evalLT() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit < n2Lit;
     }
     return function _lt(ctx, aliases, obj) {
@@ -412,7 +446,7 @@ function createEvaluator(node) {
   }
 
   function evalLTE() {
-    if (!n1Eval && !n2Eval) {
+    if ( !n1Eval && !n2Eval ) {
       return n1Lit <= n2Lit;
     }
     return function _lte(ctx, aliases, obj) {
@@ -427,13 +461,13 @@ function createEvaluator(node) {
 
     function _in(ctx, aliases, obj) {
       var rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
-      if (Array.isArray(rval)) {
+      if ( Array.isArray(rval) ) {
         return rval.indexOf(n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit) !== -1;
       }
-      else if (typeof rval === 'object') {
+      else if ( typeof rval === 'object' ) {
         return (n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit) in rval;
       }
-      else if (rval !== null && rval !== undefined) {
+      else if ( rval !== null && rval !== undefined ) {
         return (n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit) == rval;
       }
       return false;
@@ -449,11 +483,11 @@ function createEvaluator(node) {
         , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit
         , re, key;
 
-      if (typeof lval !== 'string' && !Array.isArray(lval)) {
+      if ( typeof lval !== 'string' && !Array.isArray(lval) ) {
         return false;
       }
 
-      if (typeof lval === 'string') {
+      if ( typeof lval === 'string' ) {
         lval = [lval];
       }
 
@@ -486,7 +520,7 @@ function createEvaluator(node) {
 
 function wrapExpression(node) {
   var result = createEvaluator(node);
-  if (typeof result !== 'function') {
+  if ( typeof result !== 'function' ) {
     return function _evalWrapper() {
       return result;
     };
@@ -498,7 +532,7 @@ function createSelector(select) {
   var evalSelect = wrapExpression(select[1])
     , temp = [];
 
-  switch (select[0]) {
+  switch ( select[0] ) {
     case 'select':
       return function _select(ctx, aliases, obj) {
         temp[0] = evalSelect(ctx, aliases, obj);
@@ -508,13 +542,13 @@ function createSelector(select) {
     case 'contract':
       return function _contract(ctx, aliases, obj) {
         var result = evalSelect(ctx, aliases, obj);
-        if (Array.isArray(result)) {
-          if (result.length) {
+        if ( Array.isArray(result) ) {
+          if ( result.length ) {
             temp[0] = result[0];
             return temp;
           }
         }
-        else if (result !== null && result !== undefined) {
+        else if ( result !== null && result !== undefined ) {
           temp[0] = result;
           return temp;
         }
@@ -524,10 +558,10 @@ function createSelector(select) {
     case 'expand':
       return function _expand(ctx, aliases, obj) {
         var result = evalSelect(ctx, aliases, obj);
-        if (Array.isArray(result)) {
+        if ( Array.isArray(result) ) {
           return result;
         }
-        else if (result !== null && result !== undefined) {
+        else if ( result !== null && result !== undefined ) {
           temp[0] = result;
           return temp;
         }
@@ -541,14 +575,14 @@ function createSelector(select) {
 
 function createSorter(order) {
   var getPaths = [];
-  for (var i = 0, ilen = order.length; i < ilen; i++) {
+  for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
     var item = order[i];
     getPaths.push(evalLocalPath(item.path.slice(1)));
   }
 
   return function _sorter(ctx, arr) {
     var comparators = [];
-    for (var i = 0, ilen = order.length; i < ilen; i++) {
+    for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
       var item = order[i];
       comparators.push(createComparator(getPaths[i], item.ascending));
     }
@@ -556,9 +590,9 @@ function createSorter(order) {
     arr.sort(sortFunction);
 
     function sortFunction(item1, item2) {
-      for (var i = 0, ilen = comparators.length; i < ilen; i++) {
+      for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
         var result = comparators[i](item1.obj, item2.obj);
-        if (result !== 0) {
+        if ( result !== 0 ) {
           return result;
         }
       }
@@ -566,7 +600,7 @@ function createSorter(order) {
     }
 
     function createComparator(getPath, ascending) {
-      if (ascending) {
+      if ( ascending ) {
         return function _ascendingComparator(item1, item2) {
           var val1 = getPath(ctx, item1)
             , val2 = getPath(ctx, item2);
@@ -586,18 +620,18 @@ function createSorter(order) {
 
 function createAggregator(aggregate) {
   var extensions = [];
-  for (var i = 0, ilen = aggregate.length; i < ilen; i++) {
+  for ( var i = 0, ilen = aggregate.length; i < ilen; i++ ) {
     extensions.push(getExtension(aggregate[i]));
   }
 
   return function _aggregator(ctx, arr) {
     var result = createObjectArray(arr);
     var args = [ctx, result];
-    for (var i = 0, ilen = extensions.length; i < ilen; i++) {
+    for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
       args[1] = result = extensions[i].apply(arr, args);
     }
-    if (!Array.isArray(result)) {
-      if (result == null) {
+    if ( !Array.isArray(result) ) {
+      if ( result == null ) {
         return EmptyArray;
       }
       result = [result];
@@ -628,7 +662,7 @@ function parse(language, queryString) {
   var parserPool = parserPools[language] = parserPools[language] || []
     , parser = parserPool.pop();
 
-  if (!parser) {
+  if ( !parser ) {
     parser = createParser(language);
     parser.yy = {
       node: yynode,
@@ -640,7 +674,7 @@ function parse(language, queryString) {
   var steps = parser.parse(queryString)
     , result = [];
 
-  for (var i = 0, ilen = steps.length; i < ilen; i++) {
+  for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
     var step = steps[i];
 
     result.push({
@@ -691,7 +725,7 @@ function processQuery(source, steps, params) {
     }
   });
 
-  for (var i = 0, ilen = steps.length; i < ilen; i++) {
+  for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
     results = processStep(ctx, results, steps[i]);
   }
 
@@ -713,7 +747,7 @@ function processStep(ctx, source, step) {
     var evaluated, selected, aggregated;
 
     // Evaluation Step
-    if (evaluator) {
+    if ( evaluator ) {
       // In this case, we need to sort between filtering and selecting
       evaluated = filter.call(source, evalElement);
     }
@@ -723,24 +757,18 @@ function processStep(ctx, source, step) {
     }
 
     // Pre-Select Sorting Step
-    if (sorter && sortFirst) sorter(ctx, evaluated);
+    if ( sorter && sortFirst ) sorter(ctx, evaluated);
 
     // Select Step
-    if (selector) {
+    if ( selector ) {
       selected = [];
-      for (var i = 0, ilen = evaluated.length; i < ilen; i++) {
+      for ( var i = 0, ilen = evaluated.length; i < ilen; i++ ) {
         var elem = evaluated[i]
           , obj = elem.obj
           , aliases = elem.aliases
           , selectResult = selector(ctx, aliases, obj);
 
-        selectResult = map.call(selectResult, function (item) {
-          return {
-            obj: item,
-            aliases: aliases
-          };
-        });
-
+        selectResult = map.call(selectResult, createSelectionBinder(aliases));
         spliceArrayItems(selected, selectResult);
       }
     }
@@ -749,12 +777,22 @@ function processStep(ctx, source, step) {
     }
 
     // Post-Select Sorting Step
-    if (sorter && !sortFirst) sorter(ctx, selected);
+    if ( sorter && !sortFirst ) sorter(ctx, selected);
 
     // Aggregation Step
     aggregated = aggregator ? aggregator(ctx, selected) : selected;
 
     return aggregated;
+  }
+
+  function createSelectionBinder(aliases) {
+    return selectionBinder;
+    function selectionBinder(item) {
+      return {
+        obj: item,
+        aliases: aliases
+      };
+    }
   }
 
   function evalElement(elem) {
@@ -768,17 +806,17 @@ function processStep(ctx, source, step) {
 }
 
 function processArguments(args, compiled) {
-  var i = 0, result = { params: [] }
-    , isFirstItemArray = Array.isArray(args[0]);
+  var i = 0
+    , result = { params: [] };
 
-  if (isFirstItemArray) {
+  if ( Array.isArray(args[0]) ) {
     result.source = args[i++];
   }
-  else if (compiled) {
+  else if ( compiled ) {
     throw new Error("No source Array passed to query");
   }
 
-  if (!compiled && typeof args[i] === 'string') {
+  if ( !compiled && typeof args[i] === 'string' ) {
     result.queryString = args[i++];
   }
 
@@ -809,7 +847,7 @@ function objeq() {
   var processed = processArguments(makeArray(arguments))
     , source = processed.source;
 
-  if (processed.queryString) {
+  if ( processed.queryString ) {
     var compiled = compile("objeq", processed);
     return source ? compiled(source) : compiled;
   }
@@ -822,7 +860,7 @@ function junqi(language) {
   if ( !languageFunction ) {
     throw new Error("Language '" + language + "' not registered");
   }
-  objeq.call(null, slice.call(arguments, 1));
+  languageFunction.call(null, slice.call(arguments, 1));
 }
 
 Object.defineProperties(junqi, {
