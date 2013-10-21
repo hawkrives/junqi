@@ -9,24 +9,28 @@
 // Imports
 var util = require('./util');
 
-var EmptyArray = [];
+function createCompiler(engine) {
+  return {
+    compile: compile
+  };
 
-function compile(engine, parseTree) {
-  var result = [];
+  function compile(parseTree) {
+    var result = [];
 
-  for ( var i = 0, ilen = parseTree.length; i < ilen; i++ ) {
-    var step = parseTree[i];
+    for ( var i = 0, ilen = parseTree.length; i < ilen; i++ ) {
+      var step = parseTree[i];
 
-    result.push({
-      evaluator: step.expr && wrapExpression(step.expr),
-      selector: step.select && createSelector(step.select),
-      sorter: step.order && createSorter(step.order),
-      sortFirst: step.sortFirst,
-      aggregator: step.aggregate && createAggregator(step.aggregate)
-    });
+      result.push({
+        evaluator: step.expr && wrapExpression(step.expr),
+        selector: step.select && createSelector(step.select),
+        sorter: step.order && createSorter(step.order),
+        sortFirst: step.sortFirst,
+        aggregator: step.aggregate && createAggregator(step.aggregate)
+      });
+    }
+
+    return result;
   }
-
-  return result;
 
   function createEvaluator(node) {
     if ( !Array.isArray(node) || !node.isNode ) {
@@ -61,7 +65,12 @@ function compile(engine, parseTree) {
 
     // Unary Operators
     var n1 = createEvaluator(node[1]), n1Eval, n1Lit;
-    typeof n1 === 'function' ? n1Eval = n1 : n1Lit = n1;
+    if ( typeof n1 === 'function' ) {
+      n1Eval = n1;
+    }
+    else {
+      n1Lit = n1;
+    }
 
     switch ( op ) {
       case 'not':
@@ -72,7 +81,12 @@ function compile(engine, parseTree) {
 
     // Binary Operators
     var n2 = createEvaluator(node[2]), n2Eval, n2Lit;
-    typeof n2 === 'function' ? n2Eval = n2 : n2Lit = n2;
+    if ( typeof n2 === 'function' ) {
+      n2Eval = n2;
+    }
+    else {
+      n2Lit = n2;
+    }
 
     switch ( op ) {
       case 'and':
@@ -112,7 +126,12 @@ function compile(engine, parseTree) {
     // Ternary Operator
     if ( op === 'tern' ) {
       var n3 = createEvaluator(node[3]), n3Eval, n3Lit;
-      typeof n3 === 'function' ? n3Eval = n3 : n3Lit = n3;
+      if ( typeof n3 === 'function' ) {
+        n3Eval = n3;
+      }
+      else {
+        n3Lit = n3;
+      }
       return evalTern();
     }
 
@@ -384,7 +403,7 @@ function compile(engine, parseTree) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit;
         aliases[n2Lit] = lval;
         return lval;
-      }
+      };
     }
 
     function evalTern() {
@@ -491,7 +510,7 @@ function compile(engine, parseTree) {
             temp[0] = result;
             return temp;
           }
-          return EmptyArray;
+          return [];
         };
 
       case 'expand':
@@ -504,7 +523,7 @@ function compile(engine, parseTree) {
             temp[0] = result;
             return temp;
           }
-          return EmptyArray;
+          return [];
         };
 
       default:
@@ -570,8 +589,8 @@ function compile(engine, parseTree) {
         args[1] = result = extensions[i].apply(arr, args);
       }
       if ( !Array.isArray(result) ) {
-        if ( result == null ) {
-          return EmptyArray;
+        if ( result === null || result === undefined ) {
+          return [];
         }
         result = [result];
       }
@@ -581,4 +600,4 @@ function compile(engine, parseTree) {
 }
 
 // Exports
-exports.compile = compile;
+exports.createCompiler = createCompiler;

@@ -7,66 +7,81 @@
  */
 
 // Imports
-var engine = require('./engine').createEngine()
-  , util = require('./util');
+var util = require('./util');
 
-var CURRENT_VERSION = "0.0.1"
-  , supportedLanguages = ['objeq']
-  , grammarFunctions = {};
+var CURRENT_VERSION = "0.0.2"
+  , defaultLanguages = ['objeq'];
 
 var slice = Array.prototype.slice;
 
-function junqi(language) {
-  var grammarFunction = grammarFunctions[language];
-  if ( !grammarFunction ) {
-    throw new Error("Grammar '" + language + "' not registered");
-  }
-  grammarFunction.call(null, slice.call(arguments, 1));
-}
+function createJunqiEnvironment(languages) {
+  var engine = require('./engine').createEngine()
+    , grammarFunctions = {};
 
-function processArguments(args) {
-  var result = { }
-    , i = 0;
+  junqi.junqi = junqi;
+  junqi.VERSION = CURRENT_VERSION;
+  junqi.createJunqiEnvironment = createJunqiEnvironment;
+  junqi.registerExtension = engine.registerExtension;
+  junqi.registerExtensions = engine.registerExtensions;
 
-  if ( Array.isArray(args[0]) ) {
-    result.data = args[i++];
-  }
-
-  if ( typeof args[i] === 'string' ) {
-    result.query = args[i++];
+  // Register the supported grammar functions
+  var supportedLanguages = defaultLanguages;
+  if ( Array.isArray(languages) ) {
+    supportedLanguages = languages;
   }
 
-  result.params = args.slice(i);
-  return result;
-}
+  for ( var i = 0, len = supportedLanguages.length; i < len; i++ ) {
+    var language = supportedLanguages[i];
+    junqi[language] = registerGrammar(language);
+  }
 
-function registerGrammar(language) {
-  return grammarFunctions[language] = grammarFunction;
+  return junqi;
 
-  function grammarFunction() {
-    var processed = processArguments(util.makeArray(arguments))
-      , query = processed.query
-      , params = processed.params || []
-      , data = processed.data || null;
+  function junqi(language) {
+    var grammarFunction = grammarFunctions[language];
+    if ( !grammarFunction ) {
+      throw new Error("Grammar '" + language + "' not registered");
+    }
+    grammarFunction.call(null, slice.call(arguments, 1));
+  }
 
-    if ( query ) {
+  function processArguments(args) {
+    var result = {}
+      , i = 0;
+
+    if ( Array.isArray(args[0]) ) {
+      result.data = args[i++];
+    }
+
+    if ( typeof args[i] === 'string' ) {
+      result.query = args[i++];
+    }
+
+    result.params = args.slice(i);
+    return result;
+  }
+
+  function registerGrammar(language) {
+    grammarFunctions[language] = grammarFunction;
+    return grammarFunction;
+
+    function grammarFunction() {
+      var processed = processArguments(util.makeArray(arguments))
+        , data = processed.data
+        , query = processed.query
+        , params = processed.params || [];
+
+      if ( !query ) {
+        throw new Error("A query string must be specified");
+      }
+
       var parseTree = engine.parse(language, query)
         , compiled = engine.compile(parseTree, params);
 
       return data ? compiled(data) : compiled;
     }
-
-    return data || null;
   }
 }
 
-// Exports
-module.exports = junqi.junqi = junqi;
-junqi.VERSION = CURRENT_VERSION;
-junqi.registerExtension = junqi.registerExtensions = engine.registerExtension;
-
-// Register the supported grammar functions
-for ( var i = 0, len = supportedLanguages.length; i < len; i++ ) {
-  var language = supportedLanguages[i];
-  junqi[language] = registerGrammar(language);
-}
+// Export the default junqi environment
+module.exports = createJunqiEnvironment();

@@ -9,24 +9,53 @@
 // Imports
 var junqi = require('./junqi');
 
-junqi.registerExtensions({
-
+var DefaultExtensions = {
   // Extensions from Math Module **********************************************
-  abs:   function _abs(ctx, number)    { return Math.abs(number); },
-  acos:  function _acos(ctx, number)   { return Math.acos(number); },
-  asin:  function _asin(ctx, number)   { return Math.asin(number); },
-  atan:  function _atan(ctx, number)   { return Math.atan(number); },
-  atan2: function _atan2(ctx, x, y)    { return Math.atan2(x, y); },
-  ceil:  function _ceil(ctx, number)   { return Math.ceil(number); },
-  cos:   function _cos(ctx, number)    { return Math.cos(number); },
-  exp:   function _exp(ctx, number)    { return Math.exp(number); },
-  floor: function _floor(ctx, number)  { return Math.floor(number); },
-  log:   function _log(ctx, number)    { return Math.log(number); },
-  pow:   function _pow(ctx, base, exp) { return Math.pow(base, exp); },
-  round: function _round(ctx, number)  { return Math.round(number); },
-  sin:   function _sin(ctx, number)    { return Math.sin(number); },
-  sqrt:  function _sqrt(ctx, number)   { return Math.sqrt(number); },
-  tan:   function _tan(ctx, number)    { return Math.tan(number); },
+  abs: function _abs(ctx, number) {
+    return Math.abs(number);
+  },
+  acos: function _acos(ctx, number) {
+    return Math.acos(number);
+  },
+  asin: function _asin(ctx, number) {
+    return Math.asin(number);
+  },
+  atan: function _atan(ctx, number) {
+    return Math.atan(number);
+  },
+  atan2: function _atan2(ctx, x, y) {
+    return Math.atan2(x, y);
+  },
+  ceil: function _ceil(ctx, number) {
+    return Math.ceil(number);
+  },
+  cos: function _cos(ctx, number) {
+    return Math.cos(number);
+  },
+  exp: function _exp(ctx, number) {
+    return Math.exp(number);
+  },
+  floor: function _floor(ctx, number) {
+    return Math.floor(number);
+  },
+  log: function _log(ctx, number) {
+    return Math.log(number);
+  },
+  pow: function _pow(ctx, base, exp) {
+    return Math.pow(base, exp);
+  },
+  round: function _round(ctx, number) {
+    return Math.round(number);
+  },
+  sin: function _sin(ctx, number) {
+    return Math.sin(number);
+  },
+  sqrt: function _sqrt(ctx, number) {
+    return Math.sqrt(number);
+  },
+  tan: function _tan(ctx, number) {
+    return Math.tan(number);
+  },
 
   // Other Math Extensions ****************************************************
   avg: function _avg(ctx, value) {
@@ -53,7 +82,7 @@ junqi.registerExtensions({
       var temp = value.slice(0).order();
       if ( temp.length % 2 === 0 ) {
         var mid = temp.length / 2;
-        return (temp[mid-1] + temp[mid]) / 2;
+        return (temp[mid - 1] + temp[mid]) / 2;
       }
       return temp[(temp.length + 1) / 2];
     }
@@ -85,7 +114,7 @@ junqi.registerExtensions({
 
   last: function _last(ctx, value) {
     if ( Array.isArray(value) ) {
-      if ( value.length ) return value[value.length-1];
+      if ( value.length ) return value[value.length - 1];
       return null;
     }
     return value;
@@ -107,12 +136,27 @@ junqi.registerExtensions({
 
   title: function _title(ctx, value) {
     if ( typeof value !== 'string' ) return value;
-    return value.replace(/\w\S*/g, function(word) {
+    return value.replace(/\w\S*/g, function (word) {
       return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
     });
   },
 
   upper: function _upper(ctx, value) {
     return typeof value === 'string' ? value.toUpperCase() : value;
+  },
+
+  // JSON Extensions **********************************************************
+  jsonParse: function _jsonParse(ctx, value) {
+    return JSON.parse(value);
+  },
+
+  jsonStringify: function _jsonStringify(ctx, value) {
+    return JSON.stringify(value);
   }
-});
+};
+
+// Register these Extensions in the default junqi environment
+junqi.registerExtensions(DefaultExtensions);
+
+// Exports
+exports.DefaultExtensions = DefaultExtensions;
