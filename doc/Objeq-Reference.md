@@ -162,4 +162,4 @@ What if the ages average out to a really long fractional part?  You can chain th
 
 This will calculate the average and then round it.
 
-By default, there are no Aggregator Extensions registered, but you can find several examples in extensions/index.js.
+By default, there are no Aggregator Extensions registered, but you can find several examples in extensions/extensions.js.

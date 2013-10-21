@@ -1,6 +1,15 @@
-var junqi = require('../junqi');
+/*!
+ * junqi (JavaScript Querying for Node.js)
+ * Licensed under the MIT License
+ * see doc/LICENSE.md
+ *
+ * @author Thom Bradford (github/kode4food)
+ */
 
-junqi.registerExtension({
+// Imports
+var junqi = require('./junqi');
+
+junqi.registerExtensions({
 
   // Extensions from Math Module **********************************************
   abs:   function _abs(ctx, number)    { return Math.abs(number); },

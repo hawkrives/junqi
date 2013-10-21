@@ -1,7 +1,7 @@
 var nodeunit = require('nodeunit')
   , objeq = require('../junqi').objeq;
 
-exports.aggregates = nodeunit.testCase({
+exports.symbols = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Bill", "lastName": "Bradley", "age": 30 },
