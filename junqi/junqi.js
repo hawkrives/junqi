@@ -42,7 +42,7 @@ function createJunqiEnvironment(languages) {
     if ( !grammarFunction ) {
       throw new Error("Grammar '" + language + "' not registered");
     }
-    grammarFunction.call(null, slice.call(arguments, 1));
+    grammarFunction.apply(null, slice.call(arguments, 1));
   }
 
   function processArguments(args) {

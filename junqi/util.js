@@ -7,8 +7,7 @@
  */
 
 // Use the prototypes rather than trusting instances
-var map = Array.prototype.map
-  , slice = Array.prototype.slice
+var slice = Array.prototype.slice
   , splice = Array.prototype.splice;
 
 function makeArray(arr) {
@@ -23,22 +22,19 @@ function mergeArrays(arr1, arr2) {
 }
 
 function createShadowedArray(array) {
-  return map.call(array, createShadowedItem);
-
-  function createShadowedItem(obj) {
-    return {
-      obj: obj,
-      aliases: {}
-    };
+  var result = [];
+  for ( var i = array.length; i--; ) {
+    result[i] = { obj: array[i], aliases: {} };
   }
+  return result;
 }
 
 function createObjectArray(array) {
-  return map.call(array, createObjectItem);
-
-  function createObjectItem(elem) {
-    return elem.obj;
+  var result = [];
+  for ( var i = array.length; i--; ) {
+    result[i] = array[i].obj;
   }
+  return result;
 }
 
 // Exports

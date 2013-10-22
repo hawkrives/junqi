@@ -11,7 +11,6 @@ var util = require('./util');
 
 // Use the prototypes rather than trusting instances
 var filter = Array.prototype.filter
-  , map = Array.prototype.map
   , slice = Array.prototype.slice
   , splice = Array.prototype.splice;
 
@@ -135,7 +134,10 @@ function createEngine() {
             , aliases = elem.aliases
             , selectResult = selector(ctx, aliases, obj);
 
-          selectResult = map.call(selectResult, createSelectionBinder(aliases));
+          for ( var j = selectResult.length; j--; ) {
+            selectResult[j] = { obj: selectResult[j], aliases: aliases };
+          }
+
           spliceArrayItems(selected, selectResult);
         }
       }
@@ -152,16 +154,6 @@ function createEngine() {
       aggregated = aggregator ? aggregator(ctx, selected) : selected;
 
       return aggregated;
-    }
-
-    function createSelectionBinder(aliases) {
-      return selectionBinder;
-      function selectionBinder(item) {
-        return {
-          obj: item,
-          aliases: aliases
-        };
-      }
     }
 
     function evalElement(elem) {
