@@ -117,34 +117,25 @@ ws    [\s]
 %% /* Parser Grammar */
 
 program
-  : query EOF          { return $1; }
+  : query EOF  { return $1; }
   ;
+
+/*
+   TODO: The step should be broken down more granularly into:
+         filtering, selecting, sorting, aggregation
+ */
 
 query
-  : step               { $$ = [$1]; }
-  | query THEN step    { $$ = $1; $1.push($3); yy.step += 1; }
-  ;
-
-step
-  : where              { $$ = $1; }
-  | where filter       { $$ = $2; $2.expr = $1.expr; }
-  | where aggr         { $$ = $1; $1.aggregate = $2; }
-  | where filter aggr  { $$ = $2; $2.expr = $1.expr; $2.aggregate = $3; }
-  | filter             { $$ = $1; }
-  | filter aggr        { $$ = $1; $1.aggregate = $2; }
-  | aggr               { $$ = { aggregate: $1 }; }
-  ;
-
-where
-  : expr               { $$ = { expr: $1 }; }
-  | WHERE expr         { $$ = { expr: $2 }; }
+  : filter                 { $$ = [$1]; }
+  | step                   { $$ = [$1]; }
+  | query THEN filter      { $$ = $1; $1.push($3); }
+  | query THEN step        { $$ = $1; $1.push($3); }
+  | query step             { $$ = $1; $1.push($2); }
   ;
 
 filter
-  : order_by           { $$ = { order: $1, sortFirst: true }; }
-  | order_by selector  { $$ = { order: $1, select: $2, sortFirst: true }; }
-  | selector           { $$ = { select: $1 }; }
-  | selector order_by  { $$ = { select: $1, order: $2 }; }
+  : WHERE expr         { $$ = yy.node('filter', $2); }
+  | expr               { $$ = yy.node('filter', $1); }
   ;
 
 expr
@@ -167,17 +158,17 @@ expr
   | NOT expr           { $$ = yy.node('not', $2); }
   | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'       { $$ = $2; }
-  | ternary            { $$ = $1; }
-  | func               { $$ = $1; }
-  | array              { $$ = $1; }
-  | obj                { $$ = $1; }
+  | ternary            
+  | func               
+  | array              
+  | obj                
   | NUMBER             { $$ = Number(yytext); }
   | STRING             { $$ = yytext; }
   | TRUE               { $$ = true; }
   | FALSE              { $$ = false; }
   | NULL               { $$ = null; }
   | UNDEFINED          { $$ = undefined; }
-  | path               { $$ = $1; }
+  | path               
   ;
 
 ternary
@@ -217,14 +208,22 @@ obj_item
   | IDENT                      { $$ = [$1, yy.path('local', $1)]; }
   ;
 
+step
+  : selector
+  ;
+
 selector
   : SELECT expr                { $$ = yy.node('select', $2); }
   | CONTRACT expr              { $$ = yy.node('contract', $2); }
   | EXPAND expr                { $$ = yy.node('expand', $2); }
   ;
 
-order_by
-  : ORDER_BY order_list        { $$ = $2; }
+step
+  : sorter
+  ;
+
+sorter
+  : ORDER_BY order_list        { $$ = yy.node('sort', $2); }
   ;
 
 order_list
@@ -238,8 +237,12 @@ order_spec
   | local_path DESC            { $$ = { path: $1 }; }
   ;
 
-aggr
-  : AGGREGATE aggr_list        { $$ = $2; }
+step
+  : aggregator
+  ;
+
+aggregator
+  : AGGREGATE aggr_list        { $$ = yy.node('aggregate', $2); }
   ;
 
 aggr_list
@@ -248,8 +251,8 @@ aggr_list
   ;
 
 path
-  : arg_path                   { $$ = $1; }
-  | local_path                 { $$ = $1; }
+  : arg_path                   
+  | local_path                 
   ;
 
 arg_path

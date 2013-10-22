@@ -30,7 +30,7 @@ function createJunqiEnvironment(languages) {
     supportedLanguages = languages;
   }
 
-  for ( var i = 0, len = supportedLanguages.length; i < len; i++ ) {
+  for ( var i = supportedLanguages.length; i--; ) {
     var language = supportedLanguages[i];
     junqi[language] = registerGrammar(language);
   }

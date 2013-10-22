@@ -18,15 +18,31 @@ function createCompiler(engine) {
     var result = [];
 
     for ( var i = 0, ilen = parseTree.length; i < ilen; i++ ) {
-      var step = parseTree[i];
+      var stepDefinition = parseTree[i]
+        , stepType = stepDefinition[0];
 
-      result.push({
-        evaluator: step.expr && wrapExpression(step.expr),
-        selector: step.select && createSelector(step.select),
-        sorter: step.order && createSorter(step.order),
-        sortFirst: step.sortFirst,
-        aggregator: step.aggregate && createAggregator(step.aggregate)
-      });
+      switch ( stepType ) {
+        case 'filter':
+          result.push([stepType, createFilter(stepDefinition)]);
+          break;
+
+        case 'select':
+        case 'contract':
+        case 'expand':
+          result.push([stepType, createSelector(stepDefinition)]);
+          break;
+
+        case 'sort':
+          result.push([stepType, createSorter(stepDefinition)]);
+          break;
+
+        case 'aggregate':
+          result.push([stepType, createAggregator(stepDefinition)]);
+          break;
+
+        default:
+          throw new Error("Invalid step type '" + stepType + "'");
+      }
     }
 
     return result;
@@ -142,7 +158,9 @@ function createCompiler(engine) {
 
     function objectEvalTemplate(hash) {
       var template = {};
-      for ( var key in hash ) {
+      var keys = Object.keys(hash);
+      for ( var i = keys.length; i--; ) {
+        var key = keys[i];
         var item = hash[key], isNode = Array.isArray(item) && item.isNode;
         template[key] = isNode ? createEvaluator(item) : item;
       }
@@ -152,8 +170,10 @@ function createCompiler(engine) {
     function evalObj(template) {
       return function _obj(ctx, aliases, obj) {
         var result = {};
-        for ( var key in template ) {
-          var item = template[key];
+        var keys = Object.keys(template);
+        for ( var i = keys.length; i--; ) {
+          var key = keys[i]
+            , item = template[key];
           if ( typeof item === 'function' ) {
             result[key] = item(ctx, aliases, obj);
           }
@@ -168,13 +188,13 @@ function createCompiler(engine) {
     function evalArr(template) {
       return function _arr(ctx, aliases, obj) {
         var result = [];
-        for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+        for ( var i = template.length; i--; ) {
           var item = template[i];
           if ( typeof item === 'function' ) {
-            result.push(item(ctx, aliases, obj));
+            result[i] = item(ctx, aliases, obj);
           }
           else {
-            result.push(item);
+            result[i] = item;
           }
         }
         return result;
@@ -184,13 +204,13 @@ function createCompiler(engine) {
     function evalFunc(func, template) {
       return function _func(ctx, aliases, obj) {
         var funcArgs = [];
-        for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+        for ( var i = template.length; i--; ) {
           var item = template[i];
           if ( typeof item === 'function' ) {
-            funcArgs.push(item(ctx, aliases, obj));
+            funcArgs[i] = item(ctx, aliases, obj);
           }
           else {
-            funcArgs.push(item);
+            funcArgs[i] = item;
           }
         }
         return func.apply(obj, [ctx].concat(funcArgs));
@@ -420,9 +440,9 @@ function createCompiler(engine) {
 
   function arrayEvalTemplate(items) {
     var template = [];
-    for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
+    for ( var i = items.length; i--; ) {
       var item = items[i], isNode = Array.isArray(item) && item.isNode;
-      template.push(isNode ? createEvaluator(item) : item);
+      template[i] = isNode ? createEvaluator(item) : item;
     }
     return template;
   }
@@ -476,8 +496,8 @@ function createCompiler(engine) {
     }
   }
 
-  function wrapExpression(node) {
-    var result = createEvaluator(node);
+  function createFilter(stepDefinition) {
+    var result = createEvaluator(stepDefinition[1]);
     if ( typeof result !== 'function' ) {
       return function _evalWrapper() {
         return result;
@@ -486,11 +506,12 @@ function createCompiler(engine) {
     return result;
   }
 
-  function createSelector(select) {
-    var evalSelect = wrapExpression(select[1])
+  function createSelector(stepDefinition) {
+    var evalSelect = createFilter(stepDefinition)
+      , stepType = stepDefinition[0]
       , temp = [];
 
-    switch ( select[0] ) {
+    switch ( stepType ) {
       case 'select':
         return function _select(ctx, aliases, obj) {
           temp[0] = evalSelect(ctx, aliases, obj);
@@ -527,22 +548,21 @@ function createCompiler(engine) {
         };
 
       default:
-        throw new Error("Invalid selector node: " + select[0]);
+        throw new Error("Invalid step type '" + stepType + "'");
     }
   }
 
-  function createSorter(order) {
-    var getPaths = [];
-    for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
-      var item = order[i];
-      getPaths.push(evalLocalPath(item.path.slice(1)));
+  function createSorter(stepDefinition) {
+    var order = stepDefinition[1]
+      , getPaths = [];
+    for ( var i = order.length; i--; ) {
+      getPaths[i] = evalLocalPath(order[i].path.slice(1));
     }
 
     return function _sorter(ctx, arr) {
       var comparators = [];
-      for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
-        var item = order[i];
-        comparators.push(createComparator(getPaths[i], item.ascending));
+      for ( var i = order.length; i--; ) {
+        comparators[i] = createComparator(getPaths[i], order[i].ascending);
       }
 
       arr.sort(sortFunction);
@@ -576,10 +596,11 @@ function createCompiler(engine) {
     };
   }
 
-  function createAggregator(aggregate) {
-    var extensions = [];
-    for ( var i = 0, ilen = aggregate.length; i < ilen; i++ ) {
-      extensions.push(engine.getExtension(aggregate[i]));
+  function createAggregator(stepDefinition) {
+    var aggregate = stepDefinition[1]
+      , extensions = [];
+    for ( var i = aggregate.length; i--; ) {
+      extensions[i] = engine.getExtension(aggregate[i]);
     }
 
     return function _aggregator(ctx, arr) {
