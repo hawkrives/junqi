@@ -143,8 +143,8 @@ leading_filter
   ;
 
 trailing_filter
-  : THEN expr          { $$ = yy.node('filter', $2); }
-  | WHERE expr         { $$ = yy.node('filter', $2); }
+  : WHERE expr         { $$ = yy.node('filter', $2); }
+  | THEN expr          { $$ = yy.node('filter', $2); }
   ;
 
 expr
