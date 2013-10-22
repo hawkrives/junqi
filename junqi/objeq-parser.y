@@ -118,6 +118,7 @@ ws    [\s]
 
 program
   : query EOF  { return $1; }
+  | EOF        { return []; }
   ;
 
 query
