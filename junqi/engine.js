@@ -86,46 +86,40 @@ function createEngine() {
   }
 
   function processStep(ctx, source, step) {
-    return evalResults(source);
+    var stepType = step[0]
+      , evaluator = step[1]
+      , result = []
+      , elem, aliases
+      , i, idx, ilen;
 
-    // Result Evaluation Functions ********************************************
+    switch ( stepType ) {
+      case 'sort':
+      case 'aggregate':
+        return evaluator(ctx, source);
 
-    function evalResults(source) {
-      var stepType = step[0]
-        , evaluator = step[1]
-        , result = []
-        , elem, aliases
-        , i, idx, ilen;
-
-      switch ( stepType ) {
-        case 'sort':
-        case 'aggregate':
-          return evaluator(ctx, source);
-
-        case 'filter':
-          for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
-            elem = source[i];
-            if ( evaluator(ctx, elem.aliases, elem.obj) ) {
-              result[idx++] = elem;
-            }
+      case 'filter':
+        for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
+          elem = source[i];
+          if ( evaluator(ctx, elem.aliases, elem.obj) ) {
+            result[idx++] = elem;
           }
-          return result;
+        }
+        return result;
 
-        case 'select':
-          for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
-            elem = source[i];
-            aliases = elem.aliases;
-            
-            var selectResult = evaluator(ctx, aliases, elem.obj);
-            for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
-              result[idx++] = { obj: selectResult[j], aliases: aliases };
-            }
+      case 'select':
+        for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
+          elem = source[i];
+          aliases = elem.aliases;
+
+          var selectResult = evaluator(ctx, aliases, elem.obj);
+          for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
+            result[idx++] = { obj: selectResult[j], aliases: aliases };
           }
-          return result;
+        }
+        return result;
 
-        default:
-          throw new Error("Invalid step type '" + stepType + "'");
-      }
+      default:
+        throw new Error("Invalid step type '" + stepType + "'");
     }
   }
 }
