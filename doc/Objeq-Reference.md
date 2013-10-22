@@ -14,7 +14,7 @@ The Working Set is a set of Items based on the original Source Set.  It is a tem
 An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic Queries will be overwritten if any of the Query's Source Set data or Parameters change.
 
 ## Query
-A Query consists of a set of steps, separated by the keyword 'then' or a pipe character (|).  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
+A Query consists of a set of steps.  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
     where lastName == 'Beck' expand addresses then where country == 'Germany'
 
@@ -29,11 +29,27 @@ This is a Query that consists of two Query Steps.
 2) The second Step processes the intermediate Result Set and filters those Items by a country property, resulting in a Result Set that must match the String 'Germany'.
 
 ## Query Step
-A Query Step consists of four optional parts.  The first is a Predicate that is used to filter your Source Set, the second is a Collator for ordering the results, the third is a Selector for drilling into the filtered results, and the fourth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
+A Query Step consists of one of four refinements.  The first is a Predicate that is used to filter your Source Set, the second is a Selector for drilling into the filtered results, the third is a Collator for ordering the results, and the fourth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
 
-    Predicate? ( Collator? Selector? | Selector? Collator? ) Aggregator?
+    Query
+      : LeadingStep (TrailingStep)*
+      ;
 
-Essentially the Predicate must come first, followed by an optional Collator, an optional Selector and an optional Aggregator.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
+    LeadingStep
+      : WHERE? Predicate
+      | Selector
+      | Collator
+      | Aggregator
+      ;
+
+    TrailingStep
+      : (THEN | WHERE) Predicate
+      | THEN? Selector
+      | THEN? Collator
+      | THEN? Aggregator
+      ;
+
+The order of the Steps is important because it determines the composition of the Working Set as it's being passed between the Steps.
 
 For example, the following are *entirely* different Queries:
 

@@ -120,22 +120,30 @@ program
   : query EOF  { return $1; }
   ;
 
-/*
-   TODO: The step should be broken down more granularly into:
-         filtering, selecting, sorting, aggregation
- */
-
 query
-  : filter                 { $$ = [$1]; }
-  | step                   { $$ = [$1]; }
-  | query THEN filter      { $$ = $1; $1.push($3); }
-  | query THEN step        { $$ = $1; $1.push($3); }
-  | query step             { $$ = $1; $1.push($2); }
+  : leading_step           { $$ = [$1]; }
+  | query trailing_step    { $$ = $1; $1.push($2); }
   ;
 
-filter
+leading_step
+  : leading_filter
+  | non_filter_step
+  ;
+
+trailing_step
+  : trailing_filter
+  | THEN non_filter_step
+  | non_filter_step
+  ;
+
+leading_filter
   : WHERE expr         { $$ = yy.node('filter', $2); }
   | expr               { $$ = yy.node('filter', $1); }
+  ;
+
+trailing_filter
+  : THEN expr          { $$ = yy.node('filter', $2); }
+  | WHERE expr         { $$ = yy.node('filter', $2); }
   ;
 
 expr
@@ -208,7 +216,7 @@ obj_item
   | IDENT                      { $$ = [$1, yy.path('local', $1)]; }
   ;
 
-step
+non_filter_step
   : selector
   ;
 
@@ -218,7 +226,7 @@ selector
   | EXPAND expr                { $$ = yy.node('expand', $2); }
   ;
 
-step
+non_filter_step
   : sorter
   ;
 
@@ -237,7 +245,7 @@ order_spec
   | local_path DESC            { $$ = { path: $1 }; }
   ;
 
-step
+non_filter_step
   : aggregator
   ;
 
