@@ -98,7 +98,19 @@ function createEngine() {
         return evaluator(ctx, source);
 
       case 'filter':
-        for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
+        var mutated = false;
+        for ( i = 0, ilen = source.length; i < ilen; i++ ) {
+          elem = source[i];
+          if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
+            mutated = true;
+            result = slice.call(source, 0, i);
+            break;
+          }
+        }
+        if ( !mutated ) {
+          return source;
+        }
+        for ( idx = i, i++; i < ilen; i++ ) {
           elem = source[i];
           if ( evaluator(ctx, elem.aliases, elem.obj) ) {
             result[idx++] = elem;
