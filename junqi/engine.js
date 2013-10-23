@@ -34,8 +34,7 @@ function createEngine() {
 
   function compile(parseTree, defaultParams) {
     var steps = compiler.compile(parseTree)
-      , processQuery = buildQueryProcessor(steps);
-
+      , queryProcessor = createQueryProcessor(steps);
     return compiledQuery;
 
     function compiledQuery(data) {
@@ -44,7 +43,7 @@ function createEngine() {
       }
 
       var params = util.mergeArrays(defaultParams, slice.call(arguments, 1));
-      return processQuery(data, params);
+      return queryProcessor(data, params);
     }
   }
 
@@ -75,7 +74,7 @@ function createEngine() {
     return func;
   }
 
-  function buildQueryProcessor(steps) {
+  function createQueryProcessor(steps) {
     var pipeline = [querySetup]
       , processGroups = false;
 
@@ -96,9 +95,9 @@ function createEngine() {
     }
 
     pipeline.push(processGroups ? queryGroupResults : querySetResults);
-    return processQuery;
+    return queryProcessor;
 
-    function processQuery(data, params) {
+    function queryProcessor(data, params) {
       var ctx = { source: data, params: params };
       for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
         data = pipeline[i](ctx, data);
