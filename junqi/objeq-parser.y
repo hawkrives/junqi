@@ -57,6 +57,7 @@ ws    [\s]
 "expand"                     return 'EXPAND';
 "aggregate"                  return 'AGGREGATE';
 ("order"{ws}+)?"by"          return 'ORDER_BY';
+("group"{ws}+)?"on"          return 'GROUP_ON';
 "then"                       return 'THEN';
 "this"                       return 'THIS';
 "asc"                        return 'ASC';
@@ -231,10 +232,15 @@ selector
 
 non_filter_step
   : sorter
+  | grouper
   ;
 
 sorter
   : ORDER_BY order_list        { $$ = yy.node('sort', $2); }
+  ;
+
+grouper
+  : GROUP_ON order_list        { $$ = yy.node('group', $2); }
   ;
 
 order_list

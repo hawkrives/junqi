@@ -10,8 +10,7 @@
 var util = require('./util');
 
 // Use the prototypes rather than trusting instances
-var filter = Array.prototype.filter
-  , slice = Array.prototype.slice;
+var slice = Array.prototype.slice;
 
 function createEngine() {
   var extensions = {};
@@ -34,7 +33,9 @@ function createEngine() {
   }
 
   function compile(parseTree, defaultParams) {
-    var steps = compiler.compile(parseTree);
+    var steps = compiler.compile(parseTree)
+      , processQuery = buildQueryProcessor(steps);
+
     return compiledQuery;
 
     function compiledQuery(data) {
@@ -43,7 +44,7 @@ function createEngine() {
       }
 
       var params = util.mergeArrays(defaultParams, slice.call(arguments, 1));
-      return processQuery(data, steps, params);
+      return processQuery(data, params);
     }
   }
 
@@ -74,64 +75,81 @@ function createEngine() {
     return func;
   }
 
-  function processQuery(source, steps, params) {
-    var results = util.createShadowedArray(source)
-      , ctx = { source: source, params: params };
+  function buildQueryProcessor(steps) {
+    var pipeline = [querySetup]
+      , processGroups = false;
 
     for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
-      results = processStep(ctx, results, steps[i]);
+      var step = steps[i]
+        , stepType = step[0]
+        , evaluator = step[1];
+
+      if ( processGroups ) {
+        evaluator = createGroupEvaluator(evaluator);
+      }
+
+      if ( stepType === 'group' ) {
+        processGroups = true;
+      }
+
+      pipeline.push(evaluator);
     }
 
-    return util.createObjectArray(results);
+    pipeline.push(processGroups ? queryGroupResults : querySetResults);
+    return processQuery;
+
+    function processQuery(data, params) {
+      var ctx = { source: data, params: params };
+      for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
+        data = pipeline[i](ctx, data);
+      }
+      return data;
+    }
+
+    function querySetup(ctx, data) {
+      return util.createShadowedArray(data);
+    }
+
+    function queryGroupResults(ctx, data) {
+      return processObject(data, []);
+
+      function processObject(obj, result) {
+        var keys = Object.keys(obj);
+        for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
+          var value = obj[keys[i]];
+          if ( Array.isArray(value) ) {
+            result = result.concat(util.createObjectArray(value));
+          }
+          else {
+            result = processObject(value, result);
+          }
+        }
+        return result;
+      }
+    }
+
+    function querySetResults(ctx, data) {
+      return util.createObjectArray(data);
+    }
   }
 
-  function processStep(ctx, source, step) {
-    var stepType = step[0]
-      , evaluator = step[1]
-      , result = []
-      , elem, aliases
-      , i, idx, ilen;
+  function createGroupEvaluator(evaluator) {
+    return groupEvaluator;
 
-    switch ( stepType ) {
-      case 'sort':
-      case 'aggregate':
-        return evaluator(ctx, source);
+    function groupEvaluator(ctx, data) {
+      var keys = Object.keys(data);
+      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
+        var key = keys[i]
+          , subset = data[key];
 
-      case 'filter':
-        var mutated = false;
-        for ( i = 0, ilen = source.length; i < ilen; i++ ) {
-          elem = source[i];
-          if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
-            mutated = true;
-            result = slice.call(source, 0, i);
-            break;
-          }
+        if ( Array.isArray(subset) ) {
+          data[key] = evaluator(ctx, subset);
         }
-        if ( !mutated ) {
-          return source;
+        else {
+          data[key] = groupEvaluator(ctx, subset);
         }
-        for ( idx = i, i++; i < ilen; i++ ) {
-          elem = source[i];
-          if ( evaluator(ctx, elem.aliases, elem.obj) ) {
-            result[idx++] = elem;
-          }
-        }
-        return result;
-
-      case 'select':
-        for ( i = 0, idx = 0, ilen = source.length; i < ilen; i++ ) {
-          elem = source[i];
-          aliases = elem.aliases;
-
-          var selectResult = evaluator(ctx, aliases, elem.obj);
-          for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
-            result[idx++] = { obj: selectResult[j], aliases: aliases };
-          }
-        }
-        return result;
-
-      default:
-        throw new Error("Invalid step type '" + stepType + "'");
+      }
+      return data;
     }
   }
 }

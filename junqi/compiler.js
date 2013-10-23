@@ -9,6 +9,8 @@
 // Imports
 var util = require('./util');
 
+var slice = Array.prototype.slice;
+
 function createCompiler(engine) {
   return {
     compile: compile
@@ -27,24 +29,33 @@ function createCompiler(engine) {
           break;
 
         case 'select':
+          result.push([stepType, createSelect(stepDefinition)]);
+          break;
+
         case 'contract':
+          result.push([stepType, createContract(stepDefinition)]);
+          break;
+
         case 'expand':
-          result.push([stepType, createSelector(stepDefinition)]);
+          result.push([stepType, createExpand(stepDefinition)]);
           break;
 
         case 'sort':
-          result.push([stepType, createSorter(stepDefinition)]);
+          result.push([stepType, createSort(stepDefinition)]);
+          break;
+
+        case 'group':
+          result.push([stepType, createGroup(stepDefinition)]);
           break;
 
         case 'aggregate':
-          result.push([stepType, createAggregator(stepDefinition)]);
+          result.push([stepType, createAggregate(stepDefinition)]);
           break;
 
         default:
           throw new Error("Invalid step type '" + stepType + "'");
       }
     }
-
     return result;
   }
 
@@ -168,7 +179,9 @@ function createCompiler(engine) {
     }
 
     function evalObj(template) {
-      return function _obj(ctx, aliases, obj) {
+      return objEvaluator;
+
+      function objEvaluator(ctx, aliases, obj) {
         var result = {};
         var keys = Object.keys(template);
         for ( var i = keys.length; i--; ) {
@@ -182,11 +195,13 @@ function createCompiler(engine) {
           }
         }
         return result;
-      };
+      }
     }
 
     function evalArr(template) {
-      return function _arr(ctx, aliases, obj) {
+      return arrEvaluator;
+
+      function arrEvaluator(ctx, aliases, obj) {
         var result = [];
         for ( var i = template.length; i--; ) {
           var item = template[i];
@@ -198,11 +213,13 @@ function createCompiler(engine) {
           }
         }
         return result;
-      };
+      }
     }
 
     function evalFunc(func, template) {
-      return function _func(ctx, aliases, obj) {
+      return funcEvaluator;
+
+      function funcEvaluator(ctx, aliases, obj) {
         var funcArgs = [];
         for ( var i = template.length; i--; ) {
           var item = template[i];
@@ -214,172 +231,202 @@ function createCompiler(engine) {
           }
         }
         return func.apply(obj, [ctx].concat(funcArgs));
-      };
+      }
     }
 
     function evalNOT() {
       if ( !n1Eval ) {
         return !n1Lit;
       }
-      return function _not(ctx, aliases, obj) {
+      return notEvaluator;
+
+      function notEvaluator(ctx, aliases, obj) {
         return !n1Eval(ctx, aliases, obj);
-      };
+      }
     }
 
     function evalNEG() {
       if ( !n1Eval ) {
         return -n1Lit;
       }
-      return function _neg(ctx, aliases, obj) {
+      return negEvaluator;
+
+      function negEvaluator(ctx, aliases, obj) {
         return -n1Eval(ctx, aliases, obj);
-      };
+      }
     }
 
     function evalAND() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit && n2Lit;
       }
-      return function _and(ctx, aliases, obj) {
+      return andEvaluator;
+
+      function andEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit;
         return !lval ? lval : (n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit);
-      };
+      }
     }
 
     function evalOR() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit || n2Lit;
       }
-      return function _or(ctx, aliases, obj) {
+      return orEvaluator;
+
+      function orEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit;
         return lval ? lval : (n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit);
-      };
+      }
     }
 
     function evalADD() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit + n2Lit;
       }
-      return function _add(ctx, aliases, obj) {
+      return addEvaluator;
+
+      function addEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval + rval;
-      };
+      }
     }
 
     function evalSUB() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit - n2Lit;
       }
-      return function _sub(ctx, aliases, obj) {
+      return subEvaluator;
+
+      function subEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval - rval;
-      };
+      }
     }
 
     function evalMUL() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit * n2Lit;
       }
-      return function _mul(ctx, aliases, obj) {
+      return mulEvaluator;
+
+      function mulEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval * rval;
-      };
+      }
     }
 
     function evalDIV() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit / n2Lit;
       }
-      return function _div(ctx, aliases, obj) {
+      return divEvaluator;
+
+      function divEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval / rval;
-      };
+      }
     }
 
     function evalMOD() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit % n2Lit;
       }
-      return function _mod(ctx, aliases, obj) {
+      return modEvaluator;
+
+      function modEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval % rval;
-      };
+      }
     }
 
     function evalEQ() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit == n2Lit;
       }
-      return function _eq(ctx, aliases, obj) {
+      return eqEvaluator;
+
+      function eqEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval == rval;
-      };
+      }
     }
 
     function evalNEQ() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit != n2Lit;
       }
-      return function _neq(ctx, aliases, obj) {
+      return neqEvaluator;
+
+      function neqEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval != rval;
-      };
+      }
     }
 
     function evalGT() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit > n2Lit;
       }
-      return function _gt(ctx, aliases, obj) {
+      return gtEvaluator;
+
+      function gtEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval > rval;
-      };
+      }
     }
 
     function evalGTE() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit >= n2Lit;
       }
-      return function _gte(ctx, aliases, obj) {
+      return gteEvaluator;
+
+      function gteEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval >= rval;
-      };
+      }
     }
 
     function evalLT() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit < n2Lit;
       }
-      return function _lt(ctx, aliases, obj) {
+      return ltEvaluator;
+
+      function ltEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval < rval;
-      };
+      }
     }
 
     function evalLTE() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit <= n2Lit;
       }
-      return function _lte(ctx, aliases, obj) {
+      return lteEvaluator;
+
+      function lteEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         return lval <= rval;
-      };
+      }
     }
 
     function evalIN() {
-      return n1Eval || n2Eval ? _in : _in();
+      return n1Eval || n2Eval ? inEvaluator : inEvaluator();
 
-      function _in(ctx, aliases, obj) {
+      function inEvaluator(ctx, aliases, obj) {
         var rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit;
         if ( Array.isArray(rval) ) {
           var item = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit;
@@ -397,9 +444,9 @@ function createCompiler(engine) {
 
     function evalRE() {
       var regexCache = {};
-      return n1Eval || n2Eval ? _re : _re();
+      return n1Eval || n2Eval ? reEvaluator : reEvaluator();
 
-      function _re(ctx, aliases, obj) {
+      function reEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit
           , re, key;
@@ -419,22 +466,24 @@ function createCompiler(engine) {
     }
 
     function evalAS() {
-      return function _as(ctx, aliases, obj) {
+      return asEvaluator;
+
+      function asEvaluator(ctx, aliases, obj) {
         var lval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit;
         aliases[n2Lit] = lval;
         return lval;
-      };
+      }
     }
 
     function evalTern() {
-      function _tern(ctx, aliases, obj) {
+      return n1Eval || n2Eval || n3Eval ? ternEvaluator : ternEvaluator();
+
+      function ternEvaluator(ctx, aliases, obj) {
         var cval = n1Eval ? n1Eval(ctx, aliases, obj) : n1Lit
           , tval = n2Eval ? n2Eval(ctx, aliases, obj) : n2Lit
           , fval = n3Eval ? n3Eval(ctx, aliases, obj) : n3Lit;
         return cval ? tval : fval;
       }
-
-      return n1Eval || n2Eval || n3Eval ? _tern : _tern();
     }
   }
 
@@ -449,7 +498,9 @@ function createCompiler(engine) {
 
   function evalPath(evalRoot, pathComponents) {
     var path = arrayEvalTemplate(pathComponents);
-    return function _path(ctx, aliases, obj) {
+    return pathEvaluator;
+
+    function pathEvaluator(ctx, aliases, obj) {
       var value = evalRoot(ctx, aliases, obj);
       for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
@@ -469,7 +520,7 @@ function createCompiler(engine) {
         value = value[key];
       }
       return value;
-    };
+    }
   }
 
   function evalArgPath(index, pathComponents) {
@@ -496,76 +547,130 @@ function createCompiler(engine) {
     }
   }
 
-  function createFilter(stepDefinition) {
+  function wrapEvaluator(stepDefinition) {
     var result = createEvaluator(stepDefinition[1]);
     if ( typeof result !== 'function' ) {
-      return function _evalWrapper() {
-        return result;
-      };
+      return evalWrapper;
     }
     return result;
-  }
 
-  function createSelector(stepDefinition) {
-    var evalSelect = createFilter(stepDefinition)
-      , stepType = stepDefinition[0]
-      , temp = [];
-
-    switch ( stepType ) {
-      case 'select':
-        return function _select(ctx, aliases, obj) {
-          temp[0] = evalSelect(ctx, aliases, obj);
-          return temp;
-        };
-
-      case 'contract':
-        return function _contract(ctx, aliases, obj) {
-          var result = evalSelect(ctx, aliases, obj);
-          if ( Array.isArray(result) ) {
-            if ( result.length ) {
-              temp[0] = result[0];
-              return temp;
-            }
-          }
-          else if ( result !== null && result !== undefined ) {
-            temp[0] = result;
-            return temp;
-          }
-          return [];
-        };
-
-      case 'expand':
-        return function _expand(ctx, aliases, obj) {
-          var result = evalSelect(ctx, aliases, obj);
-          if ( Array.isArray(result) ) {
-            return result;
-          }
-          else if ( result !== null && result !== undefined ) {
-            temp[0] = result;
-            return temp;
-          }
-          return [];
-        };
-
-      default:
-        throw new Error("Invalid step type '" + stepType + "'");
+    function evalWrapper() {
+      return result;
     }
   }
 
-  function createSorter(stepDefinition) {
+  function createFilter(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return filter;
+
+    function filter(ctx, arr) {
+      var elem, i, idx, ilen, result
+        , filtered = false;
+
+      // Scan for the first excluded item, if any
+      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
+          filtered = true;
+          result = slice.call(arr, 0, i);
+          break;
+        }
+      }
+
+      if ( !filtered ) {
+        // The array wasn't filtered, so we can just return it
+        return arr;
+      }
+
+      // Continue generating the filtered result
+      for ( idx = i, i++; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
+          result[idx++] = elem;
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSelect(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(select);
+
+    function select(ctx, aliases, obj) {
+      return [evaluator(ctx, aliases, obj)];
+    }
+  }
+
+  function createExpand(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(expand);
+
+    function expand(ctx, aliases, obj) {
+      var result = evaluator(ctx, aliases, obj);
+      if ( Array.isArray(result) ) {
+        return result;
+      }
+      else if ( result !== null && result !== undefined ) {
+        return [result];
+      }
+      return [];
+    }
+  }
+
+  function createContract(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(contract);
+
+    function contract(ctx, aliases, obj) {
+      var result = evaluator(ctx, aliases, obj);
+      if ( Array.isArray(result) ) {
+        if ( result.length ) {
+          return [result[0]];
+        }
+      }
+      else if ( result !== null && result !== undefined ) {
+        return [result];
+      }
+      return [];
+    }
+  }
+
+  function createSelectIterator(evaluator) {
+    return selectIterator;
+
+    function selectIterator(ctx, arr) {
+      var result = [];
+
+      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
+        var elem = arr[i]
+          , aliases = elem.aliases
+          , selectResult = evaluator(ctx, aliases, elem.obj);
+
+        for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
+          result[idx++] = { obj: selectResult[j], aliases: aliases };
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSort(stepDefinition) {
     var order = stepDefinition[1]
       , getPaths = [];
+
     for ( var i = order.length; i--; ) {
       getPaths[i] = evalLocalPath(order[i].path.slice(1));
     }
+    return sort;
 
-    return function _sorter(ctx, arr) {
+    function sort(ctx, arr) {
       var comparators = [];
       for ( var i = order.length; i--; ) {
         comparators[i] = createComparator(getPaths[i], order[i].ascending);
       }
-
       arr.sort(sortFunction);
+      return arr;
 
       function sortFunction(item1, item2) {
         for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
@@ -578,32 +683,36 @@ function createCompiler(engine) {
       }
 
       function createComparator(getPath, ascending) {
-        if ( ascending ) {
-          return function _ascendingComparator(item1, item2) {
-            var val1 = getPath(ctx, item1)
-              , val2 = getPath(ctx, item2);
-            return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
-          };
+        return ascending ? ascendingComparator : descendingComparator;
+
+        function ascendingComparator(item1, item2) {
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
+          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
         }
-        else {
-          return function _descendingComparator(item1, item2) {
-            var val1 = getPath(ctx, item1)
-              , val2 = getPath(ctx, item2);
-            return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
-          };
+
+        function descendingComparator(item1, item2) {
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
+          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
         }
       }
-    };
+    }
   }
 
-  function createAggregator(stepDefinition) {
+  function createGroup(stepDefinition) {
+
+  }
+
+  function createAggregate(stepDefinition) {
     var aggregate = stepDefinition[1]
       , extensions = [];
     for ( var i = aggregate.length; i--; ) {
       extensions[i] = engine.getExtension(aggregate[i]);
     }
+    return aggregator;
 
-    return function _aggregator(ctx, arr) {
+    function aggregator(ctx, arr) {
       var result = util.createObjectArray(arr);
       var args = [ctx, result];
       for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
@@ -616,7 +725,7 @@ function createCompiler(engine) {
         result = [result];
       }
       return util.createShadowedArray(result);
-    };
+    }
   }
 }
 
