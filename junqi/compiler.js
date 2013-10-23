@@ -25,31 +25,31 @@ function createCompiler(engine) {
 
       switch ( stepType ) {
         case 'filter':
-          result.push([stepType, createFilter(stepDefinition)]);
+          result.push([stepType, createFilterStep(stepDefinition)]);
           break;
 
         case 'select':
-          result.push([stepType, createSelect(stepDefinition)]);
+          result.push([stepType, createSelectStep(stepDefinition)]);
           break;
 
         case 'contract':
-          result.push([stepType, createContract(stepDefinition)]);
+          result.push([stepType, createContractStep(stepDefinition)]);
           break;
 
         case 'expand':
-          result.push([stepType, createExpand(stepDefinition)]);
+          result.push([stepType, createExpandStep(stepDefinition)]);
           break;
 
         case 'sort':
-          result.push([stepType, createSort(stepDefinition)]);
+          result.push([stepType, createSortStep(stepDefinition)]);
           break;
 
         case 'group':
-          result.push([stepType, createGroup(stepDefinition)]);
+          result.push([stepType, createGroupStep(stepDefinition)]);
           break;
 
         case 'aggregate':
-          result.push([stepType, createAggregate(stepDefinition)]);
+          result.push([stepType, createAggregateStep(stepDefinition)]);
           break;
 
         default:
@@ -58,6 +58,191 @@ function createCompiler(engine) {
     }
     return result;
   }
+
+  // Step Processing **********************************************************
+
+  function createFilterStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return filterStep;
+
+    function filterStep(ctx, arr) {
+      var elem, i, idx, ilen, result
+        , filtered = false;
+
+      // Scan for the first excluded item, if any
+      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
+          filtered = true;
+          result = slice.call(arr, 0, i);
+          break;
+        }
+      }
+
+      if ( !filtered ) {
+        // The array wasn't filtered, so we can just return it
+        return arr;
+      }
+
+      // Continue generating the filtered result
+      for ( idx = i, i++; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
+          result[idx++] = elem;
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSelectStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(selectStep);
+
+    function selectStep(ctx, aliases, obj) {
+      return [evaluator(ctx, aliases, obj)];
+    }
+  }
+
+  function createExpandStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(expandStep);
+
+    function expandStep(ctx, aliases, obj) {
+      var result = evaluator(ctx, aliases, obj);
+      if ( Array.isArray(result) ) {
+        return result;
+      }
+      else if ( result !== null && result !== undefined ) {
+        return [result];
+      }
+      return [];
+    }
+  }
+
+  function createContractStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition);
+    return createSelectIterator(contractStep);
+
+    function contractStep(ctx, aliases, obj) {
+      var result = evaluator(ctx, aliases, obj);
+      if ( Array.isArray(result) ) {
+        if ( result.length ) {
+          return [result[0]];
+        }
+      }
+      else if ( result !== null && result !== undefined ) {
+        return [result];
+      }
+      return [];
+    }
+  }
+
+  function createSelectIterator(evaluator) {
+    return selectIterator;
+
+    function selectIterator(ctx, arr) {
+      var result = [];
+
+      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
+        var elem = arr[i]
+          , aliases = elem.aliases
+          , selectResult = evaluator(ctx, aliases, elem.obj);
+
+        for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
+          result[idx++] = { obj: selectResult[j], aliases: aliases };
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSortStep(stepDefinition) {
+    var order = stepDefinition[1]
+      , getPaths = [];
+
+    for ( var i = order.length; i--; ) {
+      getPaths[i] = createLocalPathEvaluator(order[i].path.slice(1));
+    }
+    return sortStep;
+
+    function sortStep(ctx, arr) {
+      var comparators = [];
+      for ( var i = order.length; i--; ) {
+        comparators[i] = createComparator(getPaths[i], order[i].ascending);
+      }
+      arr.sort(sortFunction);
+      return arr;
+
+      function sortFunction(item1, item2) {
+        for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
+          var result = comparators[i](item1.obj, item2.obj);
+          if ( result !== 0 ) {
+            return result;
+          }
+        }
+        return 0;
+      }
+
+      function createComparator(getPath, ascending) {
+        return ascending ? ascendingComparator : descendingComparator;
+
+        function ascendingComparator(item1, item2) {
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
+          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
+        }
+
+        function descendingComparator(item1, item2) {
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
+          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
+        }
+      }
+    }
+  }
+
+  function createGroupStep(stepDefinition) {
+
+  }
+
+  function createAggregateStep(stepDefinition) {
+    var aggregate = stepDefinition[1]
+      , extensions = [];
+    for ( var i = aggregate.length; i--; ) {
+      extensions[i] = engine.getExtension(aggregate[i]);
+    }
+    return aggregateStep;
+
+    function aggregateStep(ctx, arr) {
+      var result = util.createObjectArray(arr);
+      var args = [ctx, result];
+      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
+        args[1] = result = extensions[i].apply(arr, args);
+      }
+      if ( !Array.isArray(result) ) {
+        if ( result === null || result === undefined ) {
+          return [];
+        }
+        result = [result];
+      }
+      return util.createShadowedArray(result);
+    }
+  }
+
+  function wrapEvaluator(stepDefinition) {
+    var result = createEvaluator(stepDefinition[1]);
+    if ( typeof result !== 'function' ) {
+      return evalWrapper;
+    }
+    return result;
+
+    function evalWrapper() {
+      return result;
+    }
+  }
+
+  // Expression Evaluation ****************************************************
 
   function createEvaluator(node) {
     if ( !Array.isArray(node) || !node.isNode ) {
@@ -545,190 +730,6 @@ function createCompiler(engine) {
       return obj;
     }
   }
-
-  /* Step Processing *********************************************************/
-
-  function wrapEvaluator(stepDefinition) {
-    var result = createEvaluator(stepDefinition[1]);
-    if ( typeof result !== 'function' ) {
-      return evalWrapper;
-    }
-    return result;
-
-    function evalWrapper() {
-      return result;
-    }
-  }
-
-  function createFilter(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
-    return filter;
-
-    function filter(ctx, arr) {
-      var elem, i, idx, ilen, result
-        , filtered = false;
-
-      // Scan for the first excluded item, if any
-      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
-          filtered = true;
-          result = slice.call(arr, 0, i);
-          break;
-        }
-      }
-
-      if ( !filtered ) {
-        // The array wasn't filtered, so we can just return it
-        return arr;
-      }
-
-      // Continue generating the filtered result
-      for ( idx = i, i++; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
-          result[idx++] = elem;
-        }
-      }
-      return result;
-    }
-  }
-
-  function createSelect(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
-    return createSelectIterator(select);
-
-    function select(ctx, aliases, obj) {
-      return [evaluator(ctx, aliases, obj)];
-    }
-  }
-
-  function createExpand(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
-    return createSelectIterator(expand);
-
-    function expand(ctx, aliases, obj) {
-      var result = evaluator(ctx, aliases, obj);
-      if ( Array.isArray(result) ) {
-        return result;
-      }
-      else if ( result !== null && result !== undefined ) {
-        return [result];
-      }
-      return [];
-    }
-  }
-
-  function createContract(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
-    return createSelectIterator(contract);
-
-    function contract(ctx, aliases, obj) {
-      var result = evaluator(ctx, aliases, obj);
-      if ( Array.isArray(result) ) {
-        if ( result.length ) {
-          return [result[0]];
-        }
-      }
-      else if ( result !== null && result !== undefined ) {
-        return [result];
-      }
-      return [];
-    }
-  }
-
-  function createSelectIterator(evaluator) {
-    return selectIterator;
-
-    function selectIterator(ctx, arr) {
-      var result = [];
-
-      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
-        var elem = arr[i]
-          , aliases = elem.aliases
-          , selectResult = evaluator(ctx, aliases, elem.obj);
-
-        for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
-          result[idx++] = { obj: selectResult[j], aliases: aliases };
-        }
-      }
-      return result;
-    }
-  }
-
-  function createSort(stepDefinition) {
-    var order = stepDefinition[1]
-      , getPaths = [];
-
-    for ( var i = order.length; i--; ) {
-      getPaths[i] = createLocalPathEvaluator(order[i].path.slice(1));
-    }
-    return sort;
-
-    function sort(ctx, arr) {
-      var comparators = [];
-      for ( var i = order.length; i--; ) {
-        comparators[i] = createComparator(getPaths[i], order[i].ascending);
-      }
-      arr.sort(sortFunction);
-      return arr;
-
-      function sortFunction(item1, item2) {
-        for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
-          var result = comparators[i](item1.obj, item2.obj);
-          if ( result !== 0 ) {
-            return result;
-          }
-        }
-        return 0;
-      }
-
-      function createComparator(getPath, ascending) {
-        return ascending ? ascendingComparator : descendingComparator;
-
-        function ascendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
-          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
-        }
-
-        function descendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
-          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
-        }
-      }
-    }
-  }
-
-  function createGroup(stepDefinition) {
-
-  }
-
-  function createAggregate(stepDefinition) {
-    var aggregate = stepDefinition[1]
-      , extensions = [];
-    for ( var i = aggregate.length; i--; ) {
-      extensions[i] = engine.getExtension(aggregate[i]);
-    }
-    return aggregator;
-
-    function aggregator(ctx, arr) {
-      var result = util.createObjectArray(arr);
-      var args = [ctx, result];
-      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
-        args[1] = result = extensions[i].apply(arr, args);
-      }
-      if ( !Array.isArray(result) ) {
-        if ( result === null || result === undefined ) {
-          return [];
-        }
-        result = [result];
-      }
-      return util.createShadowedArray(result);
-    }
-  }
 }
-
 // Exports
 exports.createCompiler = createCompiler;
