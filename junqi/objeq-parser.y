@@ -9,8 +9,10 @@
 /*
  * Objeq Grammar
  *
- * @author Thom Bradford (github/kode4food)
- * @author Stefano Rago (github/sterago)
+ * Original Authors
+ *
+ *   Thom Bradford (github/kode4food)
+ *   Stefano Rago (github/sterago)
  */
 
 %lex
