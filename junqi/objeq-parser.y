@@ -57,7 +57,7 @@ ws    [\s]
 "expand"                     return 'EXPAND';
 "aggregate"                  return 'AGGREGATE';
 ("order"{ws}+)?"by"          return 'ORDER_BY';
-("group"{ws}+)?"on"          return 'GROUP_ON';
+"group"({ws}+"by")?          return 'GROUP_BY';
 "then"                       return 'THEN';
 "this"                       return 'THIS';
 "asc"                        return 'ASC';
@@ -240,7 +240,7 @@ sorter
   ;
 
 grouper
-  : GROUP_ON order_list        { $$ = yy.node('group', $2); }
+  : GROUP_BY order_list        { $$ = yy.node('group', $2); }
   ;
 
 order_list

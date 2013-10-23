@@ -71,23 +71,23 @@ function createCompiler(engine) {
         var type = node[1];
         switch ( type ) {
           case 'arg':
-            return evalArgPath(node[2], node.slice(3));
+            return createArgPathEvaluator(node[2], node.slice(3));
           case 'local':
-            return evalLocalPath(node.slice(2));
+            return createLocalPathEvaluator(node.slice(2));
           case 'symbol':
-            return evalSymbolPath(node[2], node.slice(3));
+            return createSymbolPathEvaluator(node[2], node.slice(3));
         }
         break;
 
       case 'obj':
-        return evalObj(objectEvalTemplate(node[1]));
+        return createObjEvaluator(createObjectTemplate(node[1]));
 
       case 'arr':
-        return evalArr(arrayEvalTemplate(node[1]));
+        return createArrEvaluator(createArrayTemplate(node[1]));
 
       case 'func':
         var func = engine.getExtension(node[1]);
-        return evalFunc(func, arrayEvalTemplate(node[2]));
+        return createFuncEvaluator(func, createArrayTemplate(node[2]));
     }
 
     // Unary Operators
@@ -101,9 +101,9 @@ function createCompiler(engine) {
 
     switch ( op ) {
       case 'not':
-        return evalNOT();
+        return createNotEvaluator();
       case 'neg':
-        return evalNEG();
+        return createNegEvaluator();
     }
 
     // Binary Operators
@@ -117,37 +117,37 @@ function createCompiler(engine) {
 
     switch ( op ) {
       case 'and':
-        return evalAND();
+        return createAndEvaluator();
       case 'or':
-        return evalOR();
+        return createOrEvaluator();
       case 'add':
-        return evalADD();
+        return createAddEvaluator();
       case 'sub':
-        return evalSUB();
+        return createSubEvaluator();
       case 'mul':
-        return evalMUL();
+        return createMulEvaluator();
       case 'div':
-        return evalDIV();
+        return createDivEvaluator();
       case 'mod':
-        return evalMOD();
+        return createModEvaluator();
       case 'eq':
-        return evalEQ();
+        return createEqEvaluator();
       case 'neq':
-        return evalNEQ();
+        return createNeqEvaluator();
       case 'gt':
-        return evalGT();
+        return createGtEvaluator();
       case 'gte':
-        return evalGTE();
+        return createGteEvaluator();
       case 'lt':
-        return evalLT();
+        return createLtEvaluator();
       case 'lte':
-        return evalLTE();
+        return createLteEvaluator();
       case 'in':
-        return evalIN();
+        return createInEvaluator();
       case 're':
-        return evalRE();
+        return createReEvaluator();
       case 'as':
-        return evalAS();
+        return createAsEvaluator();
     }
 
     // Ternary Operator
@@ -159,15 +159,14 @@ function createCompiler(engine) {
       else {
         n3Lit = n3;
       }
-      return evalTern();
+      return createTernEvaluator();
     }
-
     // Should hopefully never happen
     throw new Error("Invalid parser node: " + op);
 
     // Evaluator Generation ***************************************************
 
-    function objectEvalTemplate(hash) {
+    function createObjectTemplate(hash) {
       var template = {};
       var keys = Object.keys(hash);
       for ( var i = keys.length; i--; ) {
@@ -178,7 +177,7 @@ function createCompiler(engine) {
       return template;
     }
 
-    function evalObj(template) {
+    function createObjEvaluator(template) {
       return objEvaluator;
 
       function objEvaluator(ctx, aliases, obj) {
@@ -198,7 +197,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalArr(template) {
+    function createArrEvaluator(template) {
       return arrEvaluator;
 
       function arrEvaluator(ctx, aliases, obj) {
@@ -216,7 +215,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalFunc(func, template) {
+    function createFuncEvaluator(func, template) {
       return funcEvaluator;
 
       function funcEvaluator(ctx, aliases, obj) {
@@ -234,7 +233,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalNOT() {
+    function createNotEvaluator() {
       if ( !n1Eval ) {
         return !n1Lit;
       }
@@ -245,7 +244,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalNEG() {
+    function createNegEvaluator() {
       if ( !n1Eval ) {
         return -n1Lit;
       }
@@ -256,7 +255,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalAND() {
+    function createAndEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit && n2Lit;
       }
@@ -268,7 +267,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalOR() {
+    function createOrEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit || n2Lit;
       }
@@ -280,7 +279,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalADD() {
+    function createAddEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit + n2Lit;
       }
@@ -293,7 +292,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalSUB() {
+    function createSubEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit - n2Lit;
       }
@@ -306,7 +305,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalMUL() {
+    function createMulEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit * n2Lit;
       }
@@ -319,7 +318,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalDIV() {
+    function createDivEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit / n2Lit;
       }
@@ -332,7 +331,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalMOD() {
+    function createModEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit % n2Lit;
       }
@@ -345,7 +344,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalEQ() {
+    function createEqEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit == n2Lit;
       }
@@ -358,7 +357,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalNEQ() {
+    function createNeqEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit != n2Lit;
       }
@@ -371,7 +370,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalGT() {
+    function createGtEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit > n2Lit;
       }
@@ -384,7 +383,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalGTE() {
+    function createGteEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit >= n2Lit;
       }
@@ -397,7 +396,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalLT() {
+    function createLtEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit < n2Lit;
       }
@@ -410,7 +409,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalLTE() {
+    function createLteEvaluator() {
       if ( !n1Eval && !n2Eval ) {
         return n1Lit <= n2Lit;
       }
@@ -423,7 +422,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalIN() {
+    function createInEvaluator() {
       return n1Eval || n2Eval ? inEvaluator : inEvaluator();
 
       function inEvaluator(ctx, aliases, obj) {
@@ -442,7 +441,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalRE() {
+    function createReEvaluator() {
       var regexCache = {};
       return n1Eval || n2Eval ? reEvaluator : reEvaluator();
 
@@ -465,7 +464,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalAS() {
+    function createAsEvaluator() {
       return asEvaluator;
 
       function asEvaluator(ctx, aliases, obj) {
@@ -475,7 +474,7 @@ function createCompiler(engine) {
       }
     }
 
-    function evalTern() {
+    function createTernEvaluator() {
       return n1Eval || n2Eval || n3Eval ? ternEvaluator : ternEvaluator();
 
       function ternEvaluator(ctx, aliases, obj) {
@@ -487,7 +486,7 @@ function createCompiler(engine) {
     }
   }
 
-  function arrayEvalTemplate(items) {
+  function createArrayTemplate(items) {
     var template = [];
     for ( var i = items.length; i--; ) {
       var item = items[i], isNode = Array.isArray(item) && item.isNode;
@@ -496,12 +495,12 @@ function createCompiler(engine) {
     return template;
   }
 
-  function evalPath(evalRoot, pathComponents) {
-    var path = arrayEvalTemplate(pathComponents);
+  function createPathEvaluator(rootEvaluator, pathComponents) {
+    var path = createArrayTemplate(pathComponents);
     return pathEvaluator;
 
     function pathEvaluator(ctx, aliases, obj) {
-      var value = evalRoot(ctx, aliases, obj);
+      var value = rootEvaluator(ctx, aliases, obj);
       for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
         if ( Array.isArray(value) ) {
@@ -523,29 +522,31 @@ function createCompiler(engine) {
     }
   }
 
-  function evalArgPath(index, pathComponents) {
-    return evalPath(evalArgPathRoot, pathComponents);
+  function createArgPathEvaluator(index, pathComponents) {
+    return createPathEvaluator(argPathRootEvaluator, pathComponents);
 
-    function evalArgPathRoot(ctx /* aliases, obj */) {
+    function argPathRootEvaluator(ctx /* aliases, obj */) {
       return ctx.params[index];
     }
   }
 
-  function evalSymbolPath(symbol, pathComponents) {
-    return evalPath(evalSymbolPathRoot, pathComponents);
+  function createSymbolPathEvaluator(symbol, pathComponents) {
+    return createPathEvaluator(symbolPathRootEvaluator, pathComponents);
 
-    function evalSymbolPathRoot(ctx, aliases, obj) {
+    function symbolPathRootEvaluator(ctx, aliases, obj) {
       return aliases[symbol];
     }
   }
 
-  function evalLocalPath(pathComponents) {
-    return evalPath(evalLocalPathRoot, pathComponents);
+  function createLocalPathEvaluator(pathComponents) {
+    return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
-    function evalLocalPathRoot(ctx, aliases, obj) {
+    function localPathRootEvaluator(ctx, aliases, obj) {
       return obj;
     }
   }
+
+  /* Step Processing *********************************************************/
 
   function wrapEvaluator(stepDefinition) {
     var result = createEvaluator(stepDefinition[1]);
@@ -660,7 +661,7 @@ function createCompiler(engine) {
       , getPaths = [];
 
     for ( var i = order.length; i--; ) {
-      getPaths[i] = evalLocalPath(order[i].path.slice(1));
+      getPaths[i] = createLocalPathEvaluator(order[i].path.slice(1));
     }
     return sort;
 
