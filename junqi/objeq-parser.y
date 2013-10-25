@@ -120,34 +120,41 @@ ws    [\s]
 %% /* Parser Grammar */
 
 program
-  : query EOF  { return $1; }
-  | EOF        { return []; }
+  : query EOF     { return $1; }
+  | EOF           { return []; }
   ;
 
 query
-  : leading_step           { $$ = [$1]; }
-  | query trailing_step    { $$ = $1; $1.push($2); }
+  : leading_step            { $$ = [$1]; }
+  | query trailing_step     { $$ = $1; $1.push($2); }
   ;
 
 leading_step
-  : leading_filter
-  | non_filter_step
+  : non_filter_step
+  | leading_filter
   ;
 
 trailing_step
-  : trailing_filter
-  | THEN non_filter_step
+  : THEN non_filter_step     { $$ = $2; }
   | non_filter_step
+  | trailing_filter
   ;
 
 leading_filter
-  : WHERE expr         { $$ = yy.node('filter', $2); }
-  | expr               { $$ = yy.node('filter', $1); }
+  : WHERE expr     { $$ = yy.node('filter', $2); }
+  | expr           { $$ = yy.node('filter', $1); }
   ;
 
 trailing_filter
-  : WHERE expr         { $$ = yy.node('filter', $2); }
-  | THEN expr          { $$ = yy.node('filter', $2); }
+  : WHERE expr     { $$ = yy.node('filter', $2); }
+  | THEN expr      { $$ = yy.node('filter', $2); }
+  ;
+
+non_filter_step
+  : sorter
+  | grouper
+  | selector
+  | aggregator
   ;
 
 expr
@@ -171,16 +178,9 @@ expr
   | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'       { $$ = $2; }
   | ternary            
-  | func               
-  | array              
-  | obj                
-  | NUMBER             { $$ = Number(yytext); }
-  | STRING             { $$ = yytext; }
-  | TRUE               { $$ = true; }
-  | FALSE              { $$ = false; }
-  | NULL               { $$ = null; }
-  | UNDEFINED          { $$ = undefined; }
-  | path               
+  | func
+  | path
+  | literal
   ;
 
 ternary
@@ -188,23 +188,53 @@ ternary
   ;
 
 func
-  : IDENT '(' expr_list ')'    { $$ = yy.node('func', $1, $3); }
-  | IDENT '(' ')'              { $$ = yy.node('func', $1, []); }
+  : IDENT '(' expr_list ')'     { $$ = yy.node('func', $1, $3); }
+  | IDENT '(' ')'               { $$ = yy.node('func', $1, []); }
+  ;
+
+path
+  : arg_path
+  | local_path
+  ;
+
+arg_path
+  : ARGREF                    { $$ = yy.path('arg', Number($1)-1); }
+  | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
+  | arg_path '[' expr ']'     { $$ = $1; $1.push($3); }
+  ;
+
+local_path
+  : THIS                        { $$ = yy.path('local', null); }
+  | IDENT                       { $$ = yy.path('local', null, $1); }
+  | SYMBOL                      { $$ = yy.path('symbol', $1); }
+  | local_path '.' IDENT        { $$ = $1; $1.push($3); }
+  | local_path '[' expr ']'     { $$ = $1; $1.push($3); }
+  ;
+
+literal
+  : NUMBER        { $$ = Number(yytext); }
+  | STRING        { $$ = yytext; }
+  | TRUE          { $$ = true; }
+  | FALSE         { $$ = false; }
+  | NULL          { $$ = null; }
+  | UNDEFINED     { $$ = undefined; }
+  | array
+  | obj
   ;
 
 array
-  : '[' expr_list ']'          { $$ = yy.node('arr', $2); }
-  | '[' ']'                    { $$ = yy.node('arr', []); }
+  : '[' expr_list ']'     { $$ = yy.node('arr', $2); }
+  | '[' ']'               { $$ = yy.node('arr', []); }
   ;
 
 expr_list
-  : expr                       { $$ = [$1]; }
-  | expr_list ',' expr         { $$ = $1; $1.push($3); }
+  : expr                   { $$ = [$1]; }
+  | expr_list ',' expr     { $$ = $1; $1.push($3); }
   ;
 
 obj
-  : '{' obj_items '}'          { $$ = yy.node('obj', $2); }
-  | '{' '}'                    { $$ = yy.node('obj', {}); }
+  : '{' obj_items '}'     { $$ = yy.node('obj', $2); }
+  | '{' '}'               { $$ = yy.node('obj', {}); }
   ;
 
 obj_items
@@ -215,73 +245,41 @@ obj_items
 obj_non_id: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED;
 
 obj_item
-  : obj_non_id ':' expr        { $$ = [$1, $3]; }
-  | IDENT ':' expr             { $$ = [$1, $3]; }
-  | IDENT                      { $$ = [$1, yy.path('local', $1)]; }
-  ;
-
-non_filter_step
-  : selector
+  : obj_non_id ':' expr     { $$ = [$1, $3]; }
+  | IDENT ':' expr          { $$ = [$1, $3]; }
+  | IDENT                   { $$ = [$1, yy.path('local', null, $1)]; }
   ;
 
 selector
-  : SELECT expr                { $$ = yy.node('select', $2); }
-  | CONTRACT expr              { $$ = yy.node('contract', $2); }
-  | EXPAND expr                { $$ = yy.node('expand', $2); }
-  ;
-
-non_filter_step
-  : sorter
-  | grouper
+  : SELECT expr       { $$ = yy.node('select', $2); }
+  | CONTRACT expr     { $$ = yy.node('contract', $2); }
+  | EXPAND expr       { $$ = yy.node('expand', $2); }
   ;
 
 sorter
-  : ORDER_BY order_list        { $$ = yy.node('sort', $2); }
-  ;
-
-grouper
-  : GROUP_BY order_list        { $$ = yy.node('group', $2); }
+  : ORDER_BY order_list     { $$ = yy.node('sort', $2); }
   ;
 
 order_list
-  : order_spec                 { $$ = [$1]; }
-  | order_list ',' order_spec  { $$ = $1; $1.push($3); }
+  : order_spec                    { $$ = [$1]; }
+  | order_list ',' order_spec     { $$ = $1; $1.push($3); }
   ;
 
 order_spec
-  : local_path                 { $$ = { path: $1, ascending: true }; }
-  | local_path ASC             { $$ = { path: $1, ascending: true }; }
-  | local_path DESC            { $$ = { path: $1 }; }
+  : expr          { $$ = { expr: $1, ascending: true }; }
+  | expr ASC      { $$ = { expr: $1, ascending: true }; }
+  | expr DESC     { $$ = { expr: $1 }; }
   ;
 
-non_filter_step
-  : aggregator
+grouper
+  : GROUP_BY expr_list     { $$ = yy.node('group', $2); }
   ;
 
 aggregator
-  : AGGREGATE aggr_list        { $$ = yy.node('aggregate', $2); }
+  : AGGREGATE aggr_list     { $$ = yy.node('aggregate', $2); }
   ;
 
 aggr_list
-  : IDENT                      { $$ = [$1]; }
-  | aggr_list ',' IDENT        { $$ = $1; $1.push($3); }
-  ;
-
-path
-  : arg_path                   
-  | local_path                 
-  ;
-
-arg_path
-  : ARGREF                    { $$ = yy.path('arg', Number($1)-1); }
-  | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
-  | arg_path '[' expr ']'     { $$ = $1; $1.push($3); }
-  ;
-
-local_path
-  : THIS                      { $$ = yy.path('local'); }
-  | IDENT                     { $$ = yy.path('local', $1); }
-  | SYMBOL                    { $$ = yy.path('symbol', $1); }
-  | local_path '.' IDENT      { $$ = $1; $1.push($3); }
-  | local_path '[' expr ']'   { $$ = $1; $1.push($3); }
+  : IDENT                   { $$ = [$1]; }
+  | aggr_list ',' IDENT     { $$ = $1; $1.push($3); }
   ;

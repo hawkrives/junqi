@@ -41,5 +41,12 @@ exports.aggregates = nodeunit.testCase({
       "Rounded Average Age is correct");
 
     test.done();
+  },
+
+  "Grouping Aggregation Works": function (test) {
+    test.equal(objeq(this.data, "group firstName := count")[0], 2,
+      "Aggregated Count is correct");
+
+    test.done();
   }
 });

@@ -11,6 +11,9 @@ var util = require('./util');
 
 var slice = Array.prototype.slice;
 
+var GROUP_KEY = '__junqi_group_key__'
+  , nextGroupKey = 0;
+
 function createCompiler(engine) {
   return {
     compile: compile
@@ -62,7 +65,7 @@ function createCompiler(engine) {
   // Step Processing **********************************************************
 
   function createFilterStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
+    var evaluator = wrapEvaluator(stepDefinition[1]);
     return filterStep;
 
     function filterStep(ctx, arr) {
@@ -96,7 +99,7 @@ function createCompiler(engine) {
   }
 
   function createSelectStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
+    var evaluator = wrapEvaluator(stepDefinition[1]);
     return createSelectIterator(selectStep);
 
     function selectStep(ctx, aliases, obj) {
@@ -105,7 +108,7 @@ function createCompiler(engine) {
   }
 
   function createExpandStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
+    var evaluator = wrapEvaluator(stepDefinition[1]);
     return createSelectIterator(expandStep);
 
     function expandStep(ctx, aliases, obj) {
@@ -121,7 +124,7 @@ function createCompiler(engine) {
   }
 
   function createContractStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition);
+    var evaluator = wrapEvaluator(stepDefinition[1]);
     return createSelectIterator(contractStep);
 
     function contractStep(ctx, aliases, obj) {
@@ -157,19 +160,25 @@ function createCompiler(engine) {
     }
   }
 
+  // TODO: Internal Path Evaluation Must Support 'AS'
   function createSortStep(stepDefinition) {
     var order = stepDefinition[1]
-      , getPaths = [];
+      , evaluators = [];
 
     for ( var i = order.length; i--; ) {
-      getPaths[i] = createLocalPathEvaluator(order[i].path.slice(1));
+      evaluators[i] = wrapEvaluator(order[i].expr);
     }
     return sortStep;
 
     function sortStep(ctx, arr) {
       var comparators = [];
       for ( var i = order.length; i--; ) {
-        comparators[i] = createComparator(getPaths[i], order[i].ascending);
+        if ( order[i].ascending ) {
+          comparators[i] = createAscendingComparator(evaluators[i]);
+        }
+        else {
+          comparators[i] = createDescendingComparator(evaluators[i]);
+        }
       }
       arr.sort(sortFunction);
       return arr;
@@ -184,28 +193,74 @@ function createCompiler(engine) {
         return 0;
       }
 
-      function createComparator(getPath, ascending) {
-        return ascending ? ascendingComparator : descendingComparator;
+      function createAscendingComparator(evaluator) {
+        return ascendingComparator;
 
         function ascendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
+          var val1 = evaluator(ctx, item1)
+            , val2 = evaluator(ctx, item2);
           return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
         }
+      }
+
+      function createDescendingComparator(evaluator) {
+        return descendingComparator;
 
         function descendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
+          var val1 = evaluator(ctx, item1)
+            , val2 = evaluator(ctx, item2);
           return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
         }
       }
     }
   }
 
+  // TODO: Internal Path Evaluation Must Support 'AS'
   function createGroupStep(stepDefinition) {
+    var group = stepDefinition[1]
+      , evaluators = [];
 
+    for ( var i = group.length; i--; ) {
+      evaluators[i] = wrapEvaluator(group[i]);
+    }
+    return groupStep;
+
+    function groupStep(ctx, arr) {
+      var result = {};
+
+      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+        var target = result
+          , elem = arr[i]
+          , obj = elem.obj
+          , aliases = elem.aliases
+          , evaluator, key;
+
+        for ( var j = 0, jlen = evaluators.length; j < jlen; j++ ) {
+          evaluator = evaluators[j];
+          key = getGroupKey(evaluator(ctx, aliases, obj));
+          // leafs nodes are arrays, branches are objects
+          target = target[key] || (target[key] = ( j === jlen - 1 ? [] : {} ));
+        }
+
+        target.push(elem);
+      }
+      return result;
+    }
+
+    function getGroupKey(obj) {
+      if ( typeof obj === 'object' ) {
+        if ( !obj.hasOwnProperty(GROUP_KEY) ) {
+          Object.defineProperty(obj, GROUP_KEY, {
+            value: GROUP_KEY + nextGroupKey++
+          });
+        }
+        return obj[GROUP_KEY];
+      }
+      return obj;
+    }
   }
 
+  // TODO: Result Can Still Carry Forward Group Keys
   function createAggregateStep(stepDefinition) {
     var aggregate = stepDefinition[1]
       , extensions = [];
@@ -215,8 +270,9 @@ function createCompiler(engine) {
     return aggregateStep;
 
     function aggregateStep(ctx, arr) {
-      var result = util.createObjectArray(arr);
-      var args = [ctx, result];
+      var result = util.createObjectArray(arr)
+        , args = [ctx, result];
+
       for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
         args[1] = result = extensions[i].apply(arr, args);
       }
@@ -230,8 +286,10 @@ function createCompiler(engine) {
     }
   }
 
-  function wrapEvaluator(stepDefinition) {
-    var result = createEvaluator(stepDefinition[1]);
+  // Expression Evaluation ****************************************************
+
+  function wrapEvaluator(node) {
+    var result = createEvaluator(node);
     if ( typeof result !== 'function' ) {
       return evalWrapper;
     }
@@ -241,8 +299,6 @@ function createCompiler(engine) {
       return result;
     }
   }
-
-  // Expression Evaluation ****************************************************
 
   function createEvaluator(node) {
     if ( !Array.isArray(node) || !node.isNode ) {
@@ -256,11 +312,11 @@ function createCompiler(engine) {
         var type = node[1];
         switch ( type ) {
           case 'arg':
-            return createArgPathEvaluator(node[2], node.slice(3));
+            return createArgPathEvaluator(node);
           case 'local':
-            return createLocalPathEvaluator(node.slice(2));
+            return createLocalPathEvaluator(node);
           case 'symbol':
-            return createSymbolPathEvaluator(node[2], node.slice(3));
+            return createSymbolPathEvaluator(node);
         }
         break;
 
@@ -276,7 +332,9 @@ function createCompiler(engine) {
     }
 
     // Unary Operators
-    var n1 = createEvaluator(node[1]), n1Eval, n1Lit;
+    var n1 = createEvaluator(node[1])
+      , n1Eval, n1Lit;
+
     if ( typeof n1 === 'function' ) {
       n1Eval = n1;
     }
@@ -292,7 +350,9 @@ function createCompiler(engine) {
     }
 
     // Binary Operators
-    var n2 = createEvaluator(node[2]), n2Eval, n2Lit;
+    var n2 = createEvaluator(node[2])
+      , n2Eval, n2Lit;
+
     if ( typeof n2 === 'function' ) {
       n2Eval = n2;
     }
@@ -337,7 +397,9 @@ function createCompiler(engine) {
 
     // Ternary Operator
     if ( op === 'tern' ) {
-      var n3 = createEvaluator(node[3]), n3Eval, n3Lit;
+      var n3 = createEvaluator(node[3])
+        , n3Eval, n3Lit;
+
       if ( typeof n3 === 'function' ) {
         n3Eval = n3;
       }
@@ -352,11 +414,14 @@ function createCompiler(engine) {
     // Evaluator Generation ***************************************************
 
     function createObjectTemplate(hash) {
-      var template = {};
-      var keys = Object.keys(hash);
+      var keys = Object.keys(hash)
+        , template = {};
+
       for ( var i = keys.length; i--; ) {
-        var key = keys[i];
-        var item = hash[key], isNode = Array.isArray(item) && item.isNode;
+        var key = keys[i]
+          , item = hash[key]
+          , isNode = Array.isArray(item) && item.isNode;
+
         template[key] = isNode ? createEvaluator(item) : item;
       }
       return template;
@@ -366,8 +431,9 @@ function createCompiler(engine) {
       return objEvaluator;
 
       function objEvaluator(ctx, aliases, obj) {
-        var result = {};
-        var keys = Object.keys(template);
+        var keys = Object.keys(template)
+          , result = {};
+
         for ( var i = keys.length; i--; ) {
           var key = keys[i]
             , item = template[key];
@@ -686,7 +752,7 @@ function createCompiler(engine) {
 
     function pathEvaluator(ctx, aliases, obj) {
       var value = rootEvaluator(ctx, aliases, obj);
-      for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
+      for ( var i = 3, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
         if ( Array.isArray(value) ) {
           if ( value.length === 0 ) {
@@ -707,7 +773,8 @@ function createCompiler(engine) {
     }
   }
 
-  function createArgPathEvaluator(index, pathComponents) {
+  function createArgPathEvaluator(pathComponents) {
+    var index = pathComponents[2];
     return createPathEvaluator(argPathRootEvaluator, pathComponents);
 
     function argPathRootEvaluator(ctx /* aliases, obj */) {
@@ -715,7 +782,8 @@ function createCompiler(engine) {
     }
   }
 
-  function createSymbolPathEvaluator(symbol, pathComponents) {
+  function createSymbolPathEvaluator(pathComponents) {
+    var symbol = pathComponents[2];
     return createPathEvaluator(symbolPathRootEvaluator, pathComponents);
 
     function symbolPathRootEvaluator(ctx, aliases, obj) {
