@@ -3,6 +3,7 @@
   "description": "JavaScript Object Querying",
   "author": "Thomas S. Bradford",
   "version": "0.0.4",
+  "license": "MIT",
   "homepage": "http://www.junqi.io/",
   "main": "index.js",
   "keywords": ["javascript", "json", "query", "language", "server", "nodejs"],
