@@ -4,7 +4,7 @@ var nodeunit = require('nodeunit')
 // Load the Standard Extensions
 require('../junqi/extensions');
 
-exports.aggregates = nodeunit.testCase({
+exports.groups = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -26,19 +26,15 @@ exports.aggregates = nodeunit.testCase({
     callback();
   },
 
-  "Single Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg")[0], 44.785714285714285,
-      "Average Age is correct");
+  "Grouping Aggregation Works": function (test) {
+    test.equal(objeq(this.data, "group firstName := count")[0], 2,
+      "Single-level grouped count is correct");
 
-    test.equal(objeq(this.data, "-> age := sum")[0], 627,
-      "Sum of Ages is correct");
+    test.equal(objeq(this.data, "group lastName, firstName := count")[0], 2,
+      "Nested grouped count is correct");
 
-    test.done();
-  },
-
-  "Chained Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg, round")[0], 45,
-      "Rounded Average Age is correct");
+    test.equal(objeq(this.data, "group lastName + firstName := count")[0], 2,
+      "Expression-based grouped count is correct");
 
     test.done();
   }

@@ -171,46 +171,36 @@ function createCompiler(engine) {
     return sortStep;
 
     function sortStep(ctx, arr) {
-      var comparators = [];
+      var ascending = [];
       for ( var i = order.length; i--; ) {
-        if ( order[i].ascending ) {
-          comparators[i] = createAscendingComparator(evaluators[i]);
-        }
-        else {
-          comparators[i] = createDescendingComparator(evaluators[i]);
-        }
+        ascending[i] = order[i].ascending;
       }
       arr.sort(sortFunction);
       return arr;
 
       function sortFunction(item1, item2) {
-        for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
-          var result = comparators[i](item1.obj, item2.obj);
+        var aliases1 = item1.aliases
+          , aliases2 = item2.aliases
+          , obj1 = item1.obj
+          , obj2 = item2.obj;
+
+        for ( var i = 0, ilen = evaluators.length; i < ilen; i++ ) {
+          var val1 = evaluators[i](ctx, aliases1, obj1)
+            , val2 = evaluators[i](ctx, aliases2, obj2)
+            , result;
+
+          if ( ascending[i] ) {
+            result = ( val1 == val2 ? 0 : val1 > val2 ? 1 : -1 );
+          }
+          else {
+            result = ( val1 == val2 ? 0 : val1 < val2 ? 1 : -1 );
+          }
+
           if ( result !== 0 ) {
             return result;
           }
         }
         return 0;
-      }
-
-      function createAscendingComparator(evaluator) {
-        return ascendingComparator;
-
-        function ascendingComparator(item1, item2) {
-          var val1 = evaluator(ctx, item1)
-            , val2 = evaluator(ctx, item2);
-          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
-        }
-      }
-
-      function createDescendingComparator(evaluator) {
-        return descendingComparator;
-
-        function descendingComparator(item1, item2) {
-          var val1 = evaluator(ctx, item1)
-            , val2 = evaluator(ctx, item2);
-          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
-        }
       }
     }
   }

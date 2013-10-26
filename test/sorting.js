@@ -4,7 +4,7 @@ var nodeunit = require('nodeunit')
 // Load the Standard Extensions
 require('../junqi/extensions');
 
-exports.aggregates = nodeunit.testCase({
+exports.sorting = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -26,19 +26,12 @@ exports.aggregates = nodeunit.testCase({
     callback();
   },
 
-  "Single Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg")[0], 44.785714285714285,
-      "Average Age is correct");
+  "Sorting Works": function (test) {
+    test.equal(objeq(this.data, "by lastName -> lastName")[0], 'Ash',
+      "Ascending sort is correct");
 
-    test.equal(objeq(this.data, "-> age := sum")[0], 627,
-      "Sum of Ages is correct");
-
-    test.done();
-  },
-
-  "Chained Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg, round")[0], 45,
-      "Rounded Average Age is correct");
+    test.equal(objeq(this.data, "by lastName desc -> lastName")[0], 'Williams',
+      "Descending sort is correct");
 
     test.done();
   }
