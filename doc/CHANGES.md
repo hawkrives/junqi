@@ -1,5 +1,8 @@
 # Change History
 
+## 0.0.4 - Fixed Sorting
+* Bug Fix Release.  Changes to 0.0.2 to support 'AS' broke sorting.  This has been corrected and some initial tests have been added to avoid regressions.
+
 ## 0.0.3 - Group By
 * Added initial support for GROUP BY steps in the objeq grammar.  Results can now be grouped both by primitive values and objects (or arrays), but if a primitive value is not used, junqi will have to decorate that object or array with a grouping identifier.
 
