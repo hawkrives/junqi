@@ -14,7 +14,7 @@ The Working Set is a set of Items based on the original Source Set.  It is a tem
 An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic Queries will be overwritten if any of the Query's Source Set data or Parameters change.
 
 ## Query
-A Query consists of a set of steps.  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
+A Query consists of a set of steps.  Each step of a Query will yield an intermediate Working Set that will be passed to the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
     where lastName == 'Beck' expand addresses then where country == 'Germany'
 
@@ -22,11 +22,13 @@ Which could have also been written as:
 
     lastName == 'Beck' <: addresses | country == 'Germany'
 
-This is a Query that consists of two Query Steps.
+This is a Query that consists of three Query Steps.
 
-1) The first Step filters the Source Set to only those Items whose lastName property matches the String 'Beck'.  It then produces an intermediate Result Set consisting of the elements stored by the addresses property.
+1) The first Step takes the Source Set and filters it into a Working Set containing only those Items whose lastName property matches the String 'Beck'.
 
-2) The second Step processes the intermediate Result Set and filters those Items by a country property, resulting in a Result Set that must match the String 'Germany'.
+2) The second Step takes the Working Set and produces a Working Set consisting of the elements stored by the addresses properties of each evaluated Item.
+
+3) The third Step processes the Working Set and filters those Items by a country property, resulting in a Result Set whose country must match the String 'Germany'.
 
 ## Query Step
 A Query Step consists of one of four refinements.  The first is a Predicate that is used to filter your Source Set, the second is a Selector for drilling into the filtered results, the third is a Collator for ordering the results, and the fourth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
@@ -38,6 +40,7 @@ A Query Step consists of one of four refinements.  The first is a Predicate that
     LeadingStep
       : WHERE? Predicate
       | Selector
+      | Grouper
       | Collator
       | Aggregator
       ;
@@ -45,6 +48,7 @@ A Query Step consists of one of four refinements.  The first is a Predicate that
     TrailingStep
       : (THEN | WHERE) Predicate
       | THEN? Selector
+      | THEN? Grouper
       | THEN? Collator
       | THEN? Aggregator
       ;
@@ -69,7 +73,7 @@ The second Query selects all Objects that have a firstName Property equal to 'Wi
 
 These two Queries would only work identically if spouses have the same last name, but we know that in the real world this isn't always the case.
 
-### Predicate
+### Predicate Step
 The Predicate starts with the keyword `where`, but this is purely optional and is meant solely for readability and to avoid ambiguity.  The `where` keyword is followed by a set of richly expressed conditions used to determine which Items from the Source Set will be returned as part of the Result Set
 
 For the most part, the syntax for these conditions is the same as JavaScript's, expression syntax, but with some differences both in grammar and behavior.
@@ -95,13 +99,11 @@ objeq supports Regular Expression matching using the Ruby `=~` operator, where t
 
     "^W" =~ firstName && !happy
 
-### Selector
-After a Predicate is processed, the Working Set will consist of a subset of the original Source Set.  The Selector is used to evaluate these Items and return derived content as the Result Set.  Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays
-
-There are three types of Selectors:
+### Selector Step
+After a Predicate Step is processed, the Working Set will consist of a subset of the original Source Set.  A Select Step is used to evaluate these Items and return derived content as the Result Set.
 
 #### General Purpose Selector
-General purposes Selectors will evaluate *as-is*, such that there is one resulting Item for every input Item in the Working Set.  This will be the case even if the evaluation yields a `null` value.
+General Purpose Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays.  A General Purpose Selectors will evaluate *as-is*, such that there is one resulting Item for every input Item in the Working Set.  This will be the case even if the evaluation yields a `null` value.
 
 The following Query finds all Objects with a lastName Property of 'Beck' and returns only the firstName Properties from those Objects.
 
@@ -115,10 +117,8 @@ This Query generates new Objects as its Result Set using a shorthand for directl
 
     lastName == 'Beck' -> { firstName, lastName }
 
-#### 'Expand' Selector
-Unlike the General Purpose Selector, the 'Expand' Selector may not yield a one-to-one mapping between the Working Set and Result Set.
-
-The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
+#### The Expand Selector
+Unlike a General Purpose Selector, an 'Expand' Selector may not yield a one-to-one mapping between the Working Set and Result Set.  The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
 
     lastName == 'Beck' expand addresses
 
@@ -138,19 +138,22 @@ But the former query will return no Items in the Result Set if there is no assoc
 
     lastName == 'Beck' and phoneNumber select phoneNumber
 
-### Collator
-A Collator is used to sort the Working Set based on a list of provided sort criteria.  A Collator must be placed after a Predicate and can appear before or after a Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
+### Grouper Step
+A 'Group By' is used to group the Working Set into independent groups that will be operated upon atomically by any subsequent groupings, sorts, or aggregations.
 
-This Query sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the Result Set.
+    group by lastName
+
+### Collator Step
+An 'Order By' is used to sort the Working Set based on a list of provided sort criteria.  This Query sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the Result Set.
 
     order by lastName, firstName desc -> [ lastName + ', ' + firstName ]
 
-### Aggregator
-In theory, an Aggregator yields a single Item Result Set based on the Items in the Working Set.  We say 'in theory' because there is no strict requirement that the result be a single Item.  The Aggregator consists of a set of functions that are registered as objeq Library Extensions.
+### Aggregator Step
+In theory, an Aggregator yields a single Item Result Set based on the Items in the Working Set.  We say 'in theory' because there is no strict requirement that the result be a single Item.  The Aggregator consists of a set of functions that are registered as junqi Library Extensions.
 
 As an example, this will register an Extension called 'avg' for calculating average values:
 
-    junqi.registerExtension('avg', function _avg(ctx, value) {
+    junqi.registerExtension('avg', function (ctx, value) {
       if ( Array.isArray(value) ) {
         if ( value.length === 0 ) return 0;
         for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
@@ -173,4 +176,4 @@ What if the ages average out to a really long fractional part?  You can chain th
 
 This will calculate the average and then round it.
 
-By default, there are no Aggregator Extensions registered, but you can find several examples in extensions/extensions.js.
+By default, there are no Aggregator Extensions registered, but you can register a set of basic functions junqi/extensions.js.

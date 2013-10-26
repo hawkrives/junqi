@@ -1,29 +1,26 @@
 # junqi (JavaScript Querying for Node.js)
 
 ## Introduction
-junqi is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by JSONiq [jsoniq] support.
+junqi is a Node.js library that allows JavaScript data to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by JSONiq [jsoniq] support.
 
 ### What Does it Do?
-It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.
-
-### What Doesn't it Do?
-Everything else.
+It lets you take a JavaScript Array or Object and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.
 
 ### Current Status
 The query engine is still under active development  Performance will continue to improve and language features will continue to be implemented.
 
 ## Getting Started
-Getting started is so frickin' easy!
+Getting started is so easy!
 
 ### Installation
-A pre-built version of the parsers are already included, but if you'd like to build them yourself and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
+Pre-built version of the parsers are already included, but if you'd like to build them yourself then you can do so by issuing the following command from the package's top-level directory:
 
     > npm install; npm run-script build
 
 This will also install any development dependencies and run the nodeunit test suite.
 
 ### Inclusion in Node.js
-Assuming you have installed the junqi Library into your project with npm, you can include it in a node.js module with the following:
+Assuming you have installed the junqi package into your project with npm, you can include it in a node.js module with the following:
 
     var junqi = require('junqi');
 
@@ -59,9 +56,9 @@ Assuming you have node.js installed, you can fire up the REPL and type the follo
     //    'Robert is 54 years old' ]
 
 ## More Information
-For more information about how to interact with the junqi Library and its API functions, see the API Reference at doc/API-Reference.md
+For more information about how to interact with the junqi library and its API functions, see the API Reference at doc/API-Reference.md
 
-For more information about the objeq Grammar itself, including its syntax and grammar, see the objeq Grammar Reference at doc/Objeq-Reference.md
+For more information about the objeq grammar itself, see the objeq Grammar Reference at doc/Objeq-Reference.md
 
 ## Credits and Acknowledgements
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
