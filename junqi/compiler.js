@@ -160,7 +160,6 @@ function createCompiler(engine) {
     }
   }
 
-  // TODO: Internal Path Evaluation Must Support 'AS'
   function createSortStep(stepDefinition) {
     var order = stepDefinition[1]
       , evaluators = [];
@@ -205,7 +204,6 @@ function createCompiler(engine) {
     }
   }
 
-  // TODO: Internal Path Evaluation Must Support 'AS'
   function createGroupStep(stepDefinition) {
     var group = stepDefinition[1]
       , evaluators = [];
