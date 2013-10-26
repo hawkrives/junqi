@@ -116,7 +116,7 @@ This Query generates new Objects as its Result Set using a shorthand for directl
     lastName == 'Beck' -> { firstName, lastName }
 
 #### 'Expand' Selector
-Unlike the General Purpose Selector, the 'Contract' and 'Expand' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
+Unlike the General Purpose Selector, the 'Expand' Selector may not yield a one-to-one mapping between the Working Set and Result Set.
 
 The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
 
@@ -134,7 +134,7 @@ One might think that this is semantically the same as the following:
 
     lastName == 'Beck' select phoneNumber
 
-But the former query will return no Items in the Result Set if there are is no associated phoneNumber.  On the other hand, the latter query will return a null in the Result Set.  If you wanted to rewrite the second query to function like the first, it would be:
+But the former query will return no Items in the Result Set if there is no associated phoneNumber.  On the other hand, the latter query will return a null in the Result Set.  If you wanted to rewrite the second query to function like the first, it would be:
 
     lastName == 'Beck' and phoneNumber select phoneNumber
 
