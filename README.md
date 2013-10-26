@@ -1,7 +1,7 @@
 # junqi (JavaScript Querying for Node.js)
 
 ## Introduction
-junqi is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq [objeq] grammar will be supported, eventually followed by JSONiq [jsoniq] support.
+junqi is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by JSONiq [jsoniq] support.
 
 ### What Does it Do?
 It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.
@@ -68,6 +68,7 @@ This module defines both a Lexer and Grammar that use the Jison Parser Generator
 
 ## License (MIT License)
 Copyright (c) 2013 Thomas S. Bradford
+
 Portions Copyright (c) 2012 Agilo Software GmbH
 
 Permission is hereby granted, free of charge, to any person
@@ -91,5 +92,4 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-[objeq]     https://github.com/agilosoftware/objeq
 [jsoniq]:   http://www.jsoniq.org/
