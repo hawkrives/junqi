@@ -12,7 +12,7 @@ For all of these examples, let's assume that we're working with this Array of Ja
     ];
 
 ## Querying Data
-The primary function of the junqi Library, as you might have guessed, is the ability to query data.  This is done by providing an Array or Object as the first argument to one of junqi's query functions, followed by a Query String and a set of optional Parameters:
+The primary function of the junqi Library, as you might have guessed, is the ability to query data.  This is done by providing an Array as the first argument to one of junqi's query functions, followed by a Query String and a set of optional Parameters:
 
     var objeq = require('junqi').objeq;
     var res = objeq(data, "age > 40 && gender == 'female' -> name");
@@ -31,7 +31,7 @@ A simpler query might only process a single Object:
     // --> res now contains [124]
 
 ## Compiling Queries
-If the first argument to the query function is a Query String rather than an Array or Object to be queried, then the library will assume you are trying to compile a Query.  The rules are essentially the same except that a JavaScript closure is returned that can then be used to process data repeatedly:
+If the first argument to the query function is a Query String rather than an Array then the library will assume you are trying to compile a Query.  The rules are essentially the same except that a JavaScript closure is returned that can then be used to process data repeatedly:
 
     var objeq = require('junqi').objeq;
     var ageAndGender = objeq("age > %1 && gender == %2", 40, 'female');
