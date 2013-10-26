@@ -53,7 +53,6 @@ ws    [\s]
 "false"                      return 'FALSE';
 "where"                      return 'WHERE';
 "select"                     return 'SELECT';
-"contract"                   return 'CONTRACT';
 "expand"                     return 'EXPAND';
 "aggregate"                  return 'AGGREGATE';
 ("order"{ws}+)?"by"          return 'ORDER_BY';
@@ -74,7 +73,6 @@ ws    [\s]
 "&&"                         return 'AND';
 "||"                         return 'OR';
 "->"                         return 'SELECT';
-":>"                         return 'CONTRACT';
 "<:"                         return 'EXPAND';
 ":="                         return 'AGGREGATE';
 "!"                          return 'NOT';
@@ -252,7 +250,6 @@ obj_item
 
 selector
   : SELECT expr       { $$ = yy.node('select', $2); }
-  | CONTRACT expr     { $$ = yy.node('contract', $2); }
   | EXPAND expr       { $$ = yy.node('expand', $2); }
   ;
 

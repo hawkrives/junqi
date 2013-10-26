@@ -126,22 +126,17 @@ You can also use the shorthand:
 
     lastName == 'Beck' <: addresses
 
-In this case, each individual element of addresses will be added to the Result Set.  If addresses is not an Array, it will be returned *as-is*, but only if it's not null.
+In this case, each individual element of addresses will be added to the Result Set.  If addresses is not an Array, it will be returned *as-is*, but only if it's not null.  Another example:
 
-#### 'Contract' Selector
-The 'Contract' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
-
-    lastName == 'Beck' contract addresses
-
-You can also use the shorthand:
-
-    lastName == 'Beck' :> addresses
+    lastName == 'Beck' <: phoneNumber
 
 One might think that this is semantically the same as the following:
 
-    lastName == 'Beck' select addresses[0]
+    lastName == 'Beck' select phoneNumber
 
-But the former query will return no Items in the Result Set if there are no elements in the addresses array.  On the other hand, the latter query will return a null in the Result Set.  If addresses is not an Array, it will be returned *as-is*, but only if it's not null.
+But the former query will return no Items in the Result Set if there are is no associated phoneNumber.  On the other hand, the latter query will return a null in the Result Set.  If you wanted to rewrite the second query to function like the first, it would be:
+
+    lastName == 'Beck' and phoneNumber select phoneNumber
 
 ### Collator
 A Collator is used to sort the Working Set based on a list of provided sort criteria.  A Collator must be placed after a Predicate and can appear before or after a Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.

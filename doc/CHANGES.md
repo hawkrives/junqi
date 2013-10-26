@@ -1,5 +1,8 @@
 # Change History
 
+## 0.0.5 - Removed 'CONTRACT'
+* Removed the CONTRACT (:>) operator.  Its behavior was confusing and could easily be reproduced using the EXPAND (<:) operator against the first element of an Array.
+
 ## 0.0.4 - Fixed Sorting
 * Bug Fix Release.  Changes to 0.0.2 to support 'AS' broke sorting.  This has been corrected and some initial tests have been added to avoid regressions.
 

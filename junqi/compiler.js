@@ -35,10 +35,6 @@ function createCompiler(engine) {
           result.push([stepType, createSelectStep(stepDefinition)]);
           break;
 
-        case 'contract':
-          result.push([stepType, createContractStep(stepDefinition)]);
-          break;
-
         case 'expand':
           result.push([stepType, createExpandStep(stepDefinition)]);
           break;
@@ -115,24 +111,6 @@ function createCompiler(engine) {
       var result = evaluator(ctx, aliases, obj);
       if ( Array.isArray(result) ) {
         return result;
-      }
-      else if ( result !== null && result !== undefined ) {
-        return [result];
-      }
-      return [];
-    }
-  }
-
-  function createContractStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
-    return createSelectIterator(contractStep);
-
-    function contractStep(ctx, aliases, obj) {
-      var result = evaluator(ctx, aliases, obj);
-      if ( Array.isArray(result) ) {
-        if ( result.length ) {
-          return [result[0]];
-        }
       }
       else if ( result !== null && result !== undefined ) {
         return [result];
