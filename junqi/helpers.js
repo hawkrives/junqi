@@ -6,7 +6,6 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-// Use the prototypes rather than trusting instances
 var slice = Array.prototype.slice;
 
 function createNodeFilter(query, callback) {
