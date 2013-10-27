@@ -24,12 +24,6 @@ This could have also been parameterized and written as:
     var res = objeq(data, "age > %1 && gender == %2", 40, 'female');
     // --> res now contains ['Jessica']
 
-A simpler query might only process a single Object:
-
-    var objeq = require('junqi').objeq;
-    var res = objeq({ name: 'Ronald', age: 62 }, "-> age * 2");
-    // --> res now contains [124]
-
 ## Compiling Queries
 If the first argument to the query function is a Query String rather than an Array then the library will assume you are trying to compile a Query.  The rules are essentially the same except that a JavaScript closure is returned that can then be used to process data repeatedly:
 
@@ -46,13 +40,6 @@ In this way, the parameters that are encountered by the `objeq()` function are t
 
     var res = ageAndGender(data, 60, 'male');
     // --> res now contains ['Ronald']
-
-### Querying
-> `query(query, [params])`
-> Performs a Snapshot Query against the Array
-
-> `dynamic(query, [params])`
-> Performs a Dynamic Query against the Array
 
 # Extensions
 Defining Extension Functions for junqi is a relatively painless process.  Simply register the function with the `registerExtension()` method that is exposed by the `junqi` module:

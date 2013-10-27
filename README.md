@@ -56,7 +56,7 @@ Assuming you have node.js installed, you can fire up the REPL and type the follo
     //    'Robert is 54 years old' ]
 
 ## More Information
-For more information about how to interact with the junqi library and its API functions, see the API Reference at doc/API-Reference.md
+For more information about how to interact with the junqi library and its API, see the API Reference at doc/API-Reference.md
 
 For more information about the objeq grammar itself, see the objeq Grammar Reference at doc/Objeq-Reference.md
 

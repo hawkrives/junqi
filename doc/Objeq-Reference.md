@@ -5,13 +5,13 @@ This document serves as a quick introduction to the objeq Query Grammar.
 Before diving in deep, we should define some of the terms that will be used throughout this section:
 
 ### Source Set
-An array used as the source of queried data.  As Queries may be chained, a Result Set may also serve as a Source Set.
+An array used as the source of queried data.
 
 ### Working Set
 The Working Set is a set of Items based on the original Source Set.  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
 
 ### Result Set
-An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic Queries will be overwritten if any of the Query's Source Set data or Parameters change.
+An array that is the result of queried data.
 
 ## Query
 A Query consists of a set of steps.  Each step of a Query will yield an intermediate Working Set that will be passed to the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
