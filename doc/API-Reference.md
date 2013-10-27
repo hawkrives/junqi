@@ -49,12 +49,12 @@ Defining Extension Functions for junqi is a relatively painless process.  Simply
         return "Hello " + firstName;
     });
 
-**Note:** If you've created an isolated junqi environment with `junqi.createJunqiEnvironment()` then you will need to register your extension against that environment.
-
 And then call the function from within your Query:
 
     var objeq = require('junqi').objeq;
     var res = objeq(data, "-> hello(firstName)");
+
+**Note:** If you've created an isolated junqi environment with `junqi.createJunqiEnvironment()` then you will need to register your extension against that environment.
 
 ## Five Simple Rules for Extension Writers
 1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
