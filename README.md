@@ -63,6 +63,8 @@ For more information about the objeq grammar itself, see the objeq Grammar Refer
 ## Credits and Acknowledgements
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
 
+The objeq grammar was originally developed by Thomas Bradford and Stefano Rago for Agilo Software GmbH (http://www.agilosoftware.com/)
+
 ## License (MIT License)
 Copyright (c) 2013 Thomas S. Bradford
 
