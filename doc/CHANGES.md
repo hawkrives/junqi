@@ -3,6 +3,7 @@
 ## 0.0.6 - Documentation Cleanup
 * Cleaned up the documentation a bit to match reality.
 * Made the extensions sub-module available as the documentation suggests.
+* Allowed both hashes and arrays of functions to be specified in calls to registerExtensions()
 
 ## 0.0.5 - Removed 'CONTRACT'
 * Removed the CONTRACT (:>) operator.  Its behavior was confusing and could easily be reproduced using the EXPAND (<:) operator against the first element of an Array.

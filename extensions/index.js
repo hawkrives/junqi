@@ -7,7 +7,7 @@
  */
 
 // Imports
-var junqi = require('./../junqi/junqi');
+var junqi = require('../junqi');
 
 var DefaultExtensions = [
 
