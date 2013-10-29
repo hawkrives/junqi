@@ -2,7 +2,7 @@ var nodeunit = require('nodeunit')
   , objeq = require('../junqi').objeq;
 
 // Load the Standard Extensions
-require('../junqi/extensions');
+require('../extensions');
 
 exports.aggregates = nodeunit.testCase({
   setUp: function (callback) {

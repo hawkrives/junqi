@@ -28,21 +28,27 @@ ws    [\s]
 
 %%
 
-{card}{frac}?{exp}?\b return 'NUMBER';
+{card}{frac}?{exp}?\b {
+  return 'NUMBER';
+}
 
 '"'("\\x"[a-fA-F0-9]{2}|"\\u"[a-fA-F0-9]{4}|"\\"[^xu]|[^"{esc}\n])*'"' {
-  yytext = yytext.substr(1,yyleng-2); return 'STRING';
+  yytext = yytext.substr(1,yyleng-2);
+  return 'STRING';
 }
 "'"("\\"['bfvnrt/{esc}]|"\\u"[a-fA-F0-9]{4}|[^'{esc}])*"'" {
-  yytext = yytext.substr(1,yyleng-2); return 'STRING';
+  yytext = yytext.substr(1,yyleng-2);
+  return 'STRING';
 }
 
 "%"[1-9][0-9]* {
-  yytext = yytext.substr(1); return 'ARGREF';
+  yytext = yytext.substr(1);
+  return 'ARGREF';
 };
 
 "%"[A-Za-z_$][A-Za-z_$0-9]* {
-  yytext = yytext.substr(1); return 'SYMBOL';
+  yytext = yytext.substr(1);
+  return 'SYMBOL';
 }
 
 {ws}+                        /* skip whitespace */

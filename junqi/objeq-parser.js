@@ -687,22 +687,28 @@ performAction: function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {
 
 var YYSTATE=YY_START;
 switch($avoiding_name_collisions) {
-case 0:return 53;
+case 0:
+  return 53;
+
 break;
 case 1:
-  yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2); return 54;
+  yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2);
+  return 54;
 
 break;
 case 2:
-  yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2); return 54;
+  yy_.yytext = yy_.yytext.substr(1,yy_.yyleng-2);
+  return 54;
 
 break;
 case 3:
-  yy_.yytext = yy_.yytext.substr(1); return 48;
+  yy_.yytext = yy_.yytext.substr(1);
+  return 48;
 
 break;
 case 4:
-  yy_.yytext = yy_.yytext.substr(1); return 34;
+  yy_.yytext = yy_.yytext.substr(1);
+  return 34;
 
 break;
 case 5:/* skip whitespace */

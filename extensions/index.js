@@ -7,58 +7,76 @@
  */
 
 // Imports
-var junqi = require('./junqi');
+var junqi = require('./../junqi/junqi');
 
-var DefaultExtensions = {
+var DefaultExtensions = [
+
   // Extensions from Math Module **********************************************
-  abs: function _abs(ctx, number) {
+
+  function abs(ctx, number) {
     return Math.abs(number);
   },
-  acos: function _acos(ctx, number) {
+  
+  function acos(ctx, number) {
     return Math.acos(number);
   },
-  asin: function _asin(ctx, number) {
+
+  function asin(ctx, number) {
     return Math.asin(number);
   },
-  atan: function _atan(ctx, number) {
+
+  function atan(ctx, number) {
     return Math.atan(number);
   },
-  atan2: function _atan2(ctx, x, y) {
+
+  function atan2(ctx, x, y) {
     return Math.atan2(x, y);
   },
-  ceil: function _ceil(ctx, number) {
+
+  function ceil(ctx, number) {
     return Math.ceil(number);
   },
-  cos: function _cos(ctx, number) {
+
+  function cos(ctx, number) {
     return Math.cos(number);
   },
-  exp: function _exp(ctx, number) {
+
+  function exp(ctx, number) {
     return Math.exp(number);
   },
-  floor: function _floor(ctx, number) {
+
+  function floor(ctx, number) {
     return Math.floor(number);
   },
-  log: function _log(ctx, number) {
+
+  function log(ctx, number) {
     return Math.log(number);
   },
-  pow: function _pow(ctx, base, exp) {
+
+  function pow(ctx, base, exp) {
     return Math.pow(base, exp);
   },
-  round: function _round(ctx, number) {
+
+  function round(ctx, number) {
     return Math.round(number);
   },
-  sin: function _sin(ctx, number) {
+
+  function sin(ctx, number) {
     return Math.sin(number);
   },
-  sqrt: function _sqrt(ctx, number) {
+
+  
+  function sqrt(ctx, number) {
     return Math.sqrt(number);
   },
-  tan: function _tan(ctx, number) {
+  
+  function tan(ctx, number) {
     return Math.tan(number);
   },
 
   // Other Math Extensions ****************************************************
-  avg: function _avg(ctx, value) {
+  
+  function avg(ctx, value) {
     if ( Array.isArray(value) ) {
       if ( value.length === 0 ) return 0;
       for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
@@ -67,16 +85,16 @@ var DefaultExtensions = {
     return typeof value === 'number' ? value : NaN;
   },
 
-  count: function _count(ctx, value) {
+  function count(ctx, value) {
     return Array.isArray(value) ? value.length : 0;
   },
 
-  max: function _max(ctx, value) {
+  function max(ctx, value) {
     if ( Array.isArray(value) ) return Math.max.apply(Math, value);
     return typeof value === 'number' ? value : NaN;
   },
 
-  median: function _median(ctx, value) {
+  function median(ctx, value) {
     if ( Array.isArray(value) ) {
       if ( value.length === 0 ) return 0;
       var temp = value.slice(0).order();
@@ -89,16 +107,16 @@ var DefaultExtensions = {
     return typeof value === 'number' ? value : NaN;
   },
 
-  min: function _min(ctx, value) {
+  function min(ctx, value) {
     if ( Array.isArray(value) ) return Math.min.apply(Math, value);
     return typeof value === 'number' ? value : NaN;
   },
 
-  number: function _number(ctx, value) {
+  function number(ctx, value) {
     return Number(value);
   },
 
-  sum: function _sum(ctx, value) {
+  function sum(ctx, value) {
     if ( Array.isArray(value) ) {
       for ( var i = 0, res = 0, l = value.length; i < l; res += value[i++] );
       return res;
@@ -107,12 +125,13 @@ var DefaultExtensions = {
   },
 
   // Array Extensions *********************************************************
-  first: function _first(ctx, value) {
+
+  function first(ctx, value) {
     if ( Array.isArray(value) ) return value[0];
     return value;
   },
 
-  last: function _last(ctx, value) {
+  function last(ctx, value) {
     if ( Array.isArray(value) ) {
       if ( value.length ) return value[value.length - 1];
       return null;
@@ -121,39 +140,42 @@ var DefaultExtensions = {
   },
 
   // String Extensions ********************************************************
-  lower: function _lower(ctx, value) {
+
+  function lower(ctx, value) {
     return typeof value === 'string' ? value.toLowerCase() : value;
   },
 
-  split: function _split(ctx, value, delim, idx) {
+  function split(ctx, value, delim, idx) {
     var val = String(value).split(delim || ' \n\r\t');
     return typeof idx !== 'undefined' ? val[idx] : val;
   },
 
-  string: function _string(ctx, value) {
+  function string(ctx, value) {
     return String(value);
   },
 
-  title: function _title(ctx, value) {
+  function title(ctx, value) {
     if ( typeof value !== 'string' ) return value;
     return value.replace(/\w\S*/g, function (word) {
       return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
     });
   },
 
-  upper: function _upper(ctx, value) {
+  function upper(ctx, value) {
     return typeof value === 'string' ? value.toUpperCase() : value;
   },
 
   // JSON Extensions **********************************************************
-  jsonParse: function _jsonParse(ctx, value) {
+
+  function jsonParse(ctx, value) {
     return JSON.parse(value);
   },
 
-  jsonStringify: function _jsonStringify(ctx, value) {
+  function jsonStringify(ctx, value) {
     return JSON.stringify(value);
   }
-};
+
+];
 
 // Register these Extensions in the default junqi environment
 junqi.registerExtensions(DefaultExtensions);

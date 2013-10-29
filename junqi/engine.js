@@ -47,18 +47,26 @@ function createEngine() {
     }
   }
 
-  function registerExtensions(hash) {
-    var keys = Object.keys(hash);
-    for ( var i = keys.length; i--; ) {
-      var key = keys[i];
-      registerExtension(key, hash[key]);
+  function registerExtensions(extensions) {
+    var i;
+    if ( Array.isArray(extensions) ) {
+      for ( i = extensions.length; i--; ) {
+        registerExtension(extensions[i]);
+      }
+    }
+    else {
+      var keys = Object.keys(extensions);
+      for ( i = keys.length; i--; ) {
+        var key = extensions[i];
+        registerExtension(key, extensions[key]);
+      }
     }
   }
 
   function registerExtension(name, func) {
     if ( typeof name === 'function' ) {
       func = name;
-      name = func.name;
+      name = func.name && func.name.length ? func.name : null;
     }
     if ( typeof name !== 'string' || typeof func !== 'function' ) {
       throw new Error("A name and function are required");

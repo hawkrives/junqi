@@ -1,5 +1,9 @@
 # Change History
 
+## 0.0.6 - Documentation Cleanup
+* Cleaned up the documentation a bit to match reality.
+* Made the extensions sub-module available as the documentation suggests.
+
 ## 0.0.5 - Removed 'CONTRACT'
 * Removed the CONTRACT (:>) operator.  Its behavior was confusing and could easily be reproduced using the EXPAND (<:) operator against the first element of an Array.
 

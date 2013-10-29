@@ -1,18 +1,6 @@
 # objeq Grammar Reference Manual
 This document serves as a quick introduction to the objeq Query Grammar.
 
-## Glossary
-Before diving in deep, we should define some of the terms that will be used throughout this section:
-
-### Source Set
-An array used as the source of queried data.
-
-### Working Set
-The Working Set is a set of Items based on the original Source Set.  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
-
-### Result Set
-An array that is the result of queried data.
-
 ## Query
 A Query consists of a set of steps.  Each step of a Query will yield an intermediate Working Set that will be passed to the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
@@ -139,9 +127,23 @@ But the former query will return no Items in the Result Set if there is no assoc
     lastName == 'Beck' and phoneNumber select phoneNumber
 
 ### Grouper Step
-A 'Group By' is used to group the Working Set into independent groups that will be operated upon atomically by any subsequent groupings, sorts, or aggregations.
+A 'Group By' is used to group the Working Set into independent groups that will be operated upon atomically by any subsequent groupings, sorts, or aggregations. Example:
 
     group by lastName
+
+Results can be grouped both by primitive values and objects (or arrays), but if a primitive value is not used, junqi will have to decorate that object or array with a grouping identifier.
+
+Groups may be nested by separating each grouping with a comma (,):
+
+    group by lastName, firstName aggregate count
+
+or
+
+    group lastName, firstName := count
+
+This query will first group a set by lastName, and then sub-group by firstName.  The `count` aggregate will be applied to the most granular group, which in this case is firstName within lastName.  So if there are any people with exactly the same name, the result will be greater than 1.  You could simplify this query down to a single-depth group by using an expression:
+
+    group lastName + ':' firstName := count
 
 ### Collator Step
 An 'Order By' is used to sort the Working Set based on a list of provided sort criteria.  This Query sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the Result Set.
@@ -176,4 +178,4 @@ What if the ages average out to a really long fractional part?  You can chain th
 
 This will calculate the average and then round it.
 
-By default, there are no Aggregator Extensions registered, but you can register a set of basic functions junqi/extensions.js.
+By default, there are no Extensions registered, but you can register a set of basic functions by requiring the 'junqi/extensions' module.

@@ -20,7 +20,7 @@ Pre-built version of the parsers are already included, but if you'd like to buil
 This will also install any development dependencies and run the nodeunit test suite.
 
 ### Inclusion in Node.js
-Assuming you have installed the junqi package into your project with npm, you can include it in a node.js module with the following:
+Assuming you have installed the junqi package into your project with npm, you can include it in a Node.js module with the following:
 
     var junqi = require('junqi');
 
@@ -29,7 +29,7 @@ For access to a specific grammar:
     var objeq = require('junqi').objeq;
 
 ### Performing a First Query
-Assuming you have node.js installed, you can fire up the REPL and type the following into the console (minus comments):
+Fire up the Node.js REPL and type the following into the console (minus comments):
 
     // Import the objeq Grammar
     var objeq = require('junqi').objeq;
