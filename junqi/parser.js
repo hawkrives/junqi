@@ -26,7 +26,11 @@ function createParser(engine) {
       parser = createParser(language);
       parser.yy = {
         node: yynode,
-        path: yypath
+        steps: yysteps,
+        steps_push: yysteps_push,
+        step: yystep,
+        path: yypath,
+        path_push: yypath_push
       };
     }
 
@@ -72,11 +76,32 @@ function createParser(engine) {
     return result;
   }
 
-  function yypath() {
-    // 'this' is the Parser's YY object
-    var result = ['path'].concat(util.makeArray(arguments));
+  function yysteps() {
+    var result = ['steps', util.makeArray(arguments)];
     result.isNode = true;
     return result;
+  }
+  
+  function yysteps_push(steps, step) {
+    steps[1].push(step);
+    return steps;
+  }
+  
+  function yystep() {
+    var result = util.makeArray(arguments);
+    result.isStep = true;
+    return result;
+  }
+  
+  function yypath(type) {
+    var result = [type, util.makeArray(arguments).slice(1)];
+    result.isNode = true;
+    return result;
+  }
+  
+  function yypath_push(path, component) {
+    path[1].push(component);
+    return path;
   }
 }
 

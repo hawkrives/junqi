@@ -33,8 +33,7 @@ function createEngine() {
   }
 
   function compile(parseTree, defaultParams) {
-    var steps = compiler.compile(parseTree)
-      , queryProcessor = createQueryProcessor(steps);
+    var evaluator = compiler.compile(parseTree);
     return compiledQuery;
 
     function compiledQuery(data) {
@@ -42,8 +41,11 @@ function createEngine() {
         throw new Error("First parameter must be an Array");
       }
 
-      var params = util.mergeArrays(defaultParams, slice.call(arguments, 1));
-      return queryProcessor(data, params);
+      var params = util.mergeArrays(defaultParams, slice.call(arguments, 1))
+        , ctx = { source: data, params: params }
+        , aliases = {};
+      
+      return evaluator(ctx, aliases, data);
     }
   }
 
@@ -80,84 +82,6 @@ function createEngine() {
       throw new Error("Extension '" + name + "' does not exist!");
     }
     return func;
-  }
-
-  function createQueryProcessor(steps) {
-    var pipeline = [querySetup]
-      , processGroups = false;
-
-    for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
-      var step = steps[i]
-        , stepType = step[0]
-        , evaluator = step[1];
-
-      if ( processGroups ) {
-        evaluator = createGroupEvaluator(evaluator);
-      }
-
-      if ( stepType === 'group' ) {
-        processGroups = true;
-      }
-
-      pipeline.push(evaluator);
-    }
-
-    pipeline.push(processGroups ? queryGroupResults : querySetResults);
-    return queryProcessor;
-
-    function queryProcessor(data, params) {
-      var ctx = { source: data, params: params };
-      for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
-        data = pipeline[i](ctx, data);
-      }
-      return data;
-    }
-
-    function querySetup(ctx, data) {
-      return util.createShadowedArray(data);
-    }
-
-    function queryGroupResults(ctx, data) {
-      return processObject(data, []);
-
-      function processObject(obj, result) {
-        var keys = Object.keys(obj);
-        for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
-          var value = obj[keys[i]];
-          if ( Array.isArray(value) ) {
-            result = result.concat(util.createObjectArray(value));
-          }
-          else {
-            result = processObject(value, result);
-          }
-        }
-        return result;
-      }
-    }
-
-    function querySetResults(ctx, data) {
-      return util.createObjectArray(data);
-    }
-  }
-
-  function createGroupEvaluator(evaluator) {
-    return groupEvaluator;
-
-    function groupEvaluator(ctx, data) {
-      var keys = Object.keys(data);
-      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
-        var key = keys[i]
-          , subset = data[key];
-
-        if ( Array.isArray(subset) ) {
-          data[key] = evaluator(ctx, subset);
-        }
-        else {
-          data[key] = groupEvaluator(ctx, subset);
-        }
-      }
-      return data;
-    }
   }
 }
 

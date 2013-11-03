@@ -119,18 +119,18 @@ ws    [\s]
 %left AS
 %left '.'
 
-%start program
+%start query
 
 %% /* Parser Grammar */
 
-program
-  : query EOF     { return $1; }
-  | EOF           { return []; }
+query
+  : steps EOF     { return $1; }
+  | EOF           { return yy.steps(); }
   ;
 
-query
-  : leading_step            { $$ = [$1]; }
-  | query trailing_step     { $$ = $1; $1.push($2); }
+steps
+  : leading_step            { $$ = yy.steps($1); }
+  | steps trailing_step     { $$ = yy.steps_push($1, $2); }
   ;
 
 leading_step
@@ -145,13 +145,13 @@ trailing_step
   ;
 
 leading_filter
-  : WHERE expr     { $$ = yy.node('filter', $2); }
+  : WHERE expr     { $$ = yy.step('filter', $2); }
   | expr           { $$ = yy.node('filter', $1); }
   ;
 
 trailing_filter
-  : WHERE expr     { $$ = yy.node('filter', $2); }
-  | THEN expr      { $$ = yy.node('filter', $2); }
+  : WHERE expr     { $$ = yy.step('filter', $2); }
+  | THEN expr      { $$ = yy.step('filter', $2); }
   ;
 
 non_filter_step
@@ -202,17 +202,17 @@ path
   ;
 
 arg_path
-  : ARGREF                    { $$ = yy.path('arg', Number($1)-1); }
-  | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
-  | arg_path '[' expr ']'     { $$ = $1; $1.push($3); }
+  : ARGREF                    { $$ = yy.path('path.arg', Number($1)-1); }
+  | arg_path '.' IDENT        { $$ = yy.path_push($1, $3); }
+  | arg_path '[' expr ']'     { $$ = yy.path_push($1, $3); }
   ;
 
 local_path
-  : THIS                        { $$ = yy.path('local', null); }
-  | IDENT                       { $$ = yy.path('local', null, $1); }
-  | SYMBOL                      { $$ = yy.path('symbol', $1); }
-  | local_path '.' IDENT        { $$ = $1; $1.push($3); }
-  | local_path '[' expr ']'     { $$ = $1; $1.push($3); }
+  : THIS                        { $$ = yy.path('path.local', null); }
+  | IDENT                       { $$ = yy.path('path.local', null, $1); }
+  | SYMBOL                      { $$ = yy.path('path.symbol', $1); }
+  | local_path '.' IDENT        { $$ = yy.path_push($1, $3); }
+  | local_path '[' expr ']'     { $$ = yy.path_push($1, $3); }
   ;
 
 literal
@@ -251,16 +251,16 @@ obj_non_id: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED;
 obj_item
   : obj_non_id ':' expr     { $$ = [$1, $3]; }
   | IDENT ':' expr          { $$ = [$1, $3]; }
-  | IDENT                   { $$ = [$1, yy.path('local', null, $1)]; }
+  | IDENT                   { $$ = [$1, yy.path('path.local', null, $1)]; }
   ;
 
 selector
-  : SELECT expr       { $$ = yy.node('select', $2); }
-  | EXPAND expr       { $$ = yy.node('expand', $2); }
+  : SELECT expr       { $$ = yy.step('select', $2); }
+  | EXPAND expr       { $$ = yy.step('expand', $2); }
   ;
 
 sorter
-  : ORDER_BY order_list     { $$ = yy.node('sort', $2); }
+  : ORDER_BY order_list     { $$ = yy.step('sort', $2); }
   ;
 
 order_list
@@ -275,11 +275,11 @@ order_spec
   ;
 
 grouper
-  : GROUP_BY expr_list     { $$ = yy.node('group', $2); }
+  : GROUP_BY expr_list     { $$ = yy.step('group', $2); }
   ;
 
 aggregator
-  : AGGREGATE aggr_list     { $$ = yy.node('aggregate', $2); }
+  : AGGREGATE aggr_list     { $$ = yy.step('aggregate', $2); }
   ;
 
 aggr_list

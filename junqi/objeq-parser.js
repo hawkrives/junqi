@@ -74,7 +74,7 @@
 var objeqParser = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"program":3,"query":4,"EOF":5,"leading_step":6,"trailing_step":7,"non_filter_step":8,"leading_filter":9,"THEN":10,"trailing_filter":11,"WHERE":12,"expr":13,"sorter":14,"grouper":15,"selector":16,"aggregator":17,"+":18,"-":19,"*":20,"/":21,"%":22,"AND":23,"OR":24,"EQ":25,"NEQ":26,"RE":27,"GT":28,"GTE":29,"LT":30,"LTE":31,"IN":32,"AS":33,"SYMBOL":34,"NOT":35,"(":36,")":37,"ternary":38,"func":39,"path":40,"literal":41,"?":42,":":43,"IDENT":44,"expr_list":45,"arg_path":46,"local_path":47,"ARGREF":48,".":49,"[":50,"]":51,"THIS":52,"NUMBER":53,"STRING":54,"TRUE":55,"FALSE":56,"NULL":57,"UNDEFINED":58,"array":59,"obj":60,",":61,"{":62,"obj_items":63,"}":64,"obj_item":65,"obj_non_id":66,"SELECT":67,"EXPAND":68,"ORDER_BY":69,"order_list":70,"order_spec":71,"ASC":72,"DESC":73,"GROUP_BY":74,"AGGREGATE":75,"aggr_list":76,"$accept":0,"$end":1},
+symbols_: {"error":2,"query":3,"steps":4,"EOF":5,"leading_step":6,"trailing_step":7,"non_filter_step":8,"leading_filter":9,"THEN":10,"trailing_filter":11,"WHERE":12,"expr":13,"sorter":14,"grouper":15,"selector":16,"aggregator":17,"+":18,"-":19,"*":20,"/":21,"%":22,"AND":23,"OR":24,"EQ":25,"NEQ":26,"RE":27,"GT":28,"GTE":29,"LT":30,"LTE":31,"IN":32,"AS":33,"SYMBOL":34,"NOT":35,"(":36,")":37,"ternary":38,"func":39,"path":40,"literal":41,"?":42,":":43,"IDENT":44,"expr_list":45,"arg_path":46,"local_path":47,"ARGREF":48,".":49,"[":50,"]":51,"THIS":52,"NUMBER":53,"STRING":54,"TRUE":55,"FALSE":56,"NULL":57,"UNDEFINED":58,"array":59,"obj":60,",":61,"{":62,"obj_items":63,"}":64,"obj_item":65,"obj_non_id":66,"SELECT":67,"EXPAND":68,"ORDER_BY":69,"order_list":70,"order_spec":71,"ASC":72,"DESC":73,"GROUP_BY":74,"AGGREGATE":75,"aggr_list":76,"$accept":0,"$end":1},
 terminals_: {2:"error",5:"EOF",10:"THEN",12:"WHERE",18:"+",19:"-",20:"*",21:"/",22:"%",23:"AND",24:"OR",25:"EQ",26:"NEQ",27:"RE",28:"GT",29:"GTE",30:"LT",31:"LTE",32:"IN",33:"AS",34:"SYMBOL",35:"NOT",36:"(",37:")",42:"?",43:":",44:"IDENT",48:"ARGREF",49:".",50:"[",51:"]",52:"THIS",53:"NUMBER",54:"STRING",55:"TRUE",56:"FALSE",57:"NULL",58:"UNDEFINED",61:",",62:"{",64:"}",67:"SELECT",68:"EXPAND",69:"ORDER_BY",72:"ASC",73:"DESC",74:"GROUP_BY",75:"AGGREGATE"},
 productions_: [0,[3,2],[3,1],[4,1],[4,2],[6,1],[6,1],[7,2],[7,1],[7,1],[9,2],[9,1],[11,2],[11,2],[8,1],[8,1],[8,1],[8,1],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,2],[13,2],[13,3],[13,1],[13,1],[13,1],[13,1],[38,5],[39,4],[39,3],[40,1],[40,1],[46,1],[46,3],[46,4],[47,1],[47,1],[47,1],[47,3],[47,4],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[59,3],[59,2],[45,1],[45,3],[60,3],[60,2],[63,1],[63,3],[66,1],[66,1],[66,1],[66,1],[66,1],[66,1],[65,3],[65,3],[65,1],[16,2],[16,2],[14,2],[70,1],[70,3],[71,1],[71,2],[71,2],[15,2],[17,2],[76,1],[76,3]],
 performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* action[1] */, $$ /* vstack */, _$ /* lstack */) {
@@ -84,21 +84,21 @@ var $0 = $$.length - 1;
 switch (yystate) {
 case 1: return $$[$0-1]; 
 break;
-case 2: return []; 
+case 2: return yy.steps(); 
 break;
-case 3: this.$ = [$$[$0]]; 
+case 3: this.$ = yy.steps($$[$0]); 
 break;
-case 4: this.$ = $$[$0-1]; $$[$0-1].push($$[$0]); 
+case 4: this.$ = yy.steps_push($$[$0-1], $$[$0]); 
 break;
 case 7: this.$ = $$[$0]; 
 break;
-case 10: this.$ = yy.node('filter', $$[$0]); 
+case 10: this.$ = yy.step('filter', $$[$0]); 
 break;
 case 11: this.$ = yy.node('filter', $$[$0]); 
 break;
-case 12: this.$ = yy.node('filter', $$[$0]); 
+case 12: this.$ = yy.step('filter', $$[$0]); 
 break;
-case 13: this.$ = yy.node('filter', $$[$0]); 
+case 13: this.$ = yy.step('filter', $$[$0]); 
 break;
 case 18: this.$ = yy.node('add', $$[$0-2], $$[$0]); 
 break;
@@ -144,21 +144,21 @@ case 42: this.$ = yy.node('func', $$[$0-3], $$[$0-1]);
 break;
 case 43: this.$ = yy.node('func', $$[$0-2], []); 
 break;
-case 46: this.$ = yy.path('arg', Number($$[$0])-1); 
+case 46: this.$ = yy.path('path.arg', Number($$[$0])-1); 
 break;
-case 47: this.$ = $$[$0-2]; $$[$0-2].push($$[$0]); 
+case 47: this.$ = yy.path_push($$[$0-2], $$[$0]); 
 break;
-case 48: this.$ = $$[$0-3]; $$[$0-3].push($$[$0-1]); 
+case 48: this.$ = yy.path_push($$[$0-3], $$[$0-1]); 
 break;
-case 49: this.$ = yy.path('local', null); 
+case 49: this.$ = yy.path('path.local', null); 
 break;
-case 50: this.$ = yy.path('local', null, $$[$0]); 
+case 50: this.$ = yy.path('path.local', null, $$[$0]); 
 break;
-case 51: this.$ = yy.path('symbol', $$[$0]); 
+case 51: this.$ = yy.path('path.symbol', $$[$0]); 
 break;
-case 52: this.$ = $$[$0-2]; $$[$0-2].push($$[$0]); 
+case 52: this.$ = yy.path_push($$[$0-2], $$[$0]); 
 break;
-case 53: this.$ = $$[$0-3]; $$[$0-3].push($$[$0-1]); 
+case 53: this.$ = yy.path_push($$[$0-3], $$[$0-1]); 
 break;
 case 54: this.$ = Number(yytext); 
 break;
@@ -192,13 +192,13 @@ case 76: this.$ = [$$[$0-2], $$[$0]];
 break;
 case 77: this.$ = [$$[$0-2], $$[$0]]; 
 break;
-case 78: this.$ = [$$[$0], yy.path('local', null, $$[$0])]; 
+case 78: this.$ = [$$[$0], yy.path('path.local', null, $$[$0])]; 
 break;
-case 79: this.$ = yy.node('select', $$[$0]); 
+case 79: this.$ = yy.step('select', $$[$0]); 
 break;
-case 80: this.$ = yy.node('expand', $$[$0]); 
+case 80: this.$ = yy.step('expand', $$[$0]); 
 break;
-case 81: this.$ = yy.node('sort', $$[$0]); 
+case 81: this.$ = yy.step('sort', $$[$0]); 
 break;
 case 82: this.$ = [$$[$0]]; 
 break;
@@ -210,9 +210,9 @@ case 85: this.$ = { expr: $$[$0-1], ascending: true };
 break;
 case 86: this.$ = { expr: $$[$0-1] }; 
 break;
-case 87: this.$ = yy.node('group', $$[$0]); 
+case 87: this.$ = yy.step('group', $$[$0]); 
 break;
-case 88: this.$ = yy.node('aggregate', $$[$0]); 
+case 88: this.$ = yy.step('aggregate', $$[$0]); 
 break;
 case 89: this.$ = [$$[$0]]; 
 break;
