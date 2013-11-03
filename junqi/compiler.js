@@ -18,10 +18,6 @@ function isFunction(value) {
   return typeof value === 'function';
 }
 
-function isLiteral(value) {
-  return typeof value !== 'function';
-}
-
 function createCompiler(env) {
   var getExtension = env.getExtension;
   
@@ -41,7 +37,7 @@ function createCompiler(env) {
   function wrapEvaluator(node) {
     var result = createEvaluator(node);
     if ( isFunction(result) ) {
-      return result;      
+      return result;
     }
     return evalWrapper;
 
@@ -197,7 +193,7 @@ function createCompiler(env) {
       case 'aggregate':
         return createAggregateStep(stepDefinition);
       default:
-        throw new Error("Invalid step type '" + stepType + "'");
+        throw new Error("Invalid Step in Parse Tree: " + stepType);
     }
   }
 
@@ -447,7 +443,7 @@ function createCompiler(env) {
       for ( var i = keys.length; i--; ) {
         var key = keys[i]
           , item = template[key];
-        result[key] = isLiteral(item) ? item : item(ctx, aliases, obj);
+        result[key] = isFunction(item) ? item(ctx, aliases, obj) : item;
       }
       return result;
     }
@@ -461,7 +457,7 @@ function createCompiler(env) {
       var result = [];
       for ( var i = template.length; i--; ) {
         var item = template[i];
-        result[i] = isLiteral(item) ? item : item(ctx, aliases, obj);
+        result[i] = isFunction(item) ? item(ctx, aliases, obj) : item;
       }
       return result;
     }
@@ -476,7 +472,7 @@ function createCompiler(env) {
       var funcArgs = [];
       for ( var i = template.length; i--; ) {
         var item = template[i];
-        funcArgs[i] = isLiteral(item) ? item : item(ctx, aliases, obj);
+        funcArgs[i] = isFunction(item) ? item(ctx, aliases, obj) : item;
       }
       return func.apply(obj, [ctx].concat(funcArgs));
     }
@@ -484,10 +480,7 @@ function createCompiler(env) {
 
   function createNotEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    if ( isLiteral($1) ) {
-      return !$1;
-    }
-    return notEvaluator;
+    return isFunction($1) ? notEvaluator : notEvaluator();
 
     function notEvaluator(ctx, aliases, obj) {
       return !$1(ctx, aliases, obj);
@@ -496,11 +489,8 @@ function createCompiler(env) {
 
   function createNegEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    if ( isLiteral($1) ) {
-      return -$1;
-    }
-    return negEvaluator;
-
+    return isFunction($1) ? negEvaluator : negEvaluator();
+ 
     function negEvaluator(ctx, aliases, obj) {
       return -$1(ctx, aliases, obj);
     }
@@ -509,57 +499,48 @@ function createCompiler(env) {
   function createAndEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 && $2;
-    }
-    return andEvaluator;
+    return $1_func || $2_func ? andEvaluator : andEvaluator();
 
     function andEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
       if ( !lval ) {
         return lval;
       }
-      return $2_lit ? $2 : $2(ctx, aliases, obj);
+      return $2_func ? $2(ctx, aliases, obj) : $2;
     }
   }
 
   function createOrEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 || $2;
-    }
-    return orEvaluator;
+    return $1_func || $2_func ? orEvaluator : orEvaluator();
 
     function orEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
       if ( lval ) {
         return lval;
       }
-      return $2_lit ? $2 : $2(ctx, aliases, obj);
+      return $2_func ? $2(ctx, aliases, obj) : $2;
     }
   }
 
   function createAddEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 + $2;
-    }
-    return addEvaluator;
+    return $1_func || $2_func ? addEvaluator : addEvaluator();
 
     function addEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval + rval;
     }
   }
@@ -567,17 +548,14 @@ function createCompiler(env) {
   function createSubEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
-    
-    if ( $1_lit && $2_lit ) {
-      return $1 - $2;
-    }
-    return subEvaluator;
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
+
+    return $1_func || $2_func ? subEvaluator : subEvaluator();
 
     function subEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval - rval;
     }
   }
@@ -585,17 +563,14 @@ function createCompiler(env) {
   function createMulEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
-    
-    if ( $1_lit && $2_lit ) {
-      return $1 * $2;
-    }
-    return mulEvaluator;
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
+
+    return $1_func || $2_func ? mulEvaluator : mulEvaluator();
 
     function mulEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval * rval;
     }
   }
@@ -603,17 +578,14 @@ function createCompiler(env) {
   function createDivEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
-    
-    if ( $1_lit && $2_lit ) {
-      return $1 / $2;
-    }
-    return divEvaluator;
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
+
+    return $1_func || $2_func ? divEvaluator : divEvaluator();
 
     function divEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval / rval;
     }
   }
@@ -621,17 +593,14 @@ function createCompiler(env) {
   function createModEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 % $2;
-    }
-    return modEvaluator;
+    return $1_func || $2_func ? modEvaluator : modEvaluator();
 
     function modEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval % rval;
     }
   }
@@ -639,17 +608,14 @@ function createCompiler(env) {
   function createEqEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 == $2;
-    }
-    return eqEvaluator;
+    return $1_func || $2_func ? eqEvaluator : eqEvaluator();
 
     function eqEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval == rval;
     }
   }
@@ -657,17 +623,14 @@ function createCompiler(env) {
   function createNeqEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 != $2;
-    }
-    return neqEvaluator;
+    return $1_func || $2_func ? neqEvaluator : neqEvaluator();
 
     function neqEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval != rval;
     }
   }
@@ -675,17 +638,14 @@ function createCompiler(env) {
   function createGtEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 > $2;
-    }
-    return gtEvaluator;
+    return $1_func || $2_func ? gtEvaluator : gtEvaluator();
 
     function gtEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval > rval;
     }
   }
@@ -693,17 +653,14 @@ function createCompiler(env) {
   function createGteEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 >= $2;
-    }
-    return gteEvaluator;
+    return $1_func || $2_func ? gteEvaluator : gteEvaluator();
 
     function gteEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval >= rval;
     }
   }
@@ -711,17 +668,14 @@ function createCompiler(env) {
   function createLtEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 < $2;
-    }
-    return ltEvaluator;
+    return $1_func || $2_func ? ltEvaluator : ltEvaluator();
 
     function ltEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval < rval;
     }
   }
@@ -729,17 +683,14 @@ function createCompiler(env) {
   function createLteEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1)
-      , $2_lit = isLiteral($2);
+      , $1_func = isFunction($1)
+      , $2_func = isFunction($2);
 
-    if ( $1_lit && $2_lit ) {
-      return $1 <= $2;
-    }
-    return lteEvaluator;
+    return $1_func || $2_func ? lteEvaluator : lteEvaluator();
 
     function lteEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj)
-        , rval = $2_lit ? $2 : $2(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1
+        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
       return lval <= rval;
     }
   }
@@ -799,12 +750,12 @@ function createCompiler(env) {
   function createAsEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_lit = isLiteral($1);
+      , $1_func = isFunction($1);
 
     return asEvaluator;
 
     function asEvaluator(ctx, aliases, obj) {
-      var lval = $1_lit ? $1 : $1(ctx, aliases, obj);
+      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
       aliases[$2] = lval;
       return lval;
     }
