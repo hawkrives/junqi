@@ -809,7 +809,7 @@ function createCompiler(env) {
         }
 
         var comp = path[i]
-          , key = typeof comp === 'function' ? comp(ctx, aliases, obj) : comp;
+          , key = isFunction(comp) ? comp(ctx, aliases, obj) : comp;
 
         value = value[key];
       }
