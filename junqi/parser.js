@@ -9,13 +9,17 @@
 // Imports
 var util = require('./util');
 
-function createParser(engine) {
+function createParser(env) {
   var parserClasses = {}
     , parserPools = {};
 
-  return {
+  var parser = {
     parse: parse
   };
+  util.freezeObjects(parser);
+  return parser;
+
+  // Implementation ***********************************************************
 
   function parse(language, queryString) {
     // Get a Parser from the pool, if possible

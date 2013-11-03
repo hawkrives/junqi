@@ -15,14 +15,21 @@ var CURRENT_VERSION = "0.0.7"
 var slice = Array.prototype.slice;
 
 function createJunqiEnvironment(languages) {
-  var engine = require('./engine').createEngine()
-    , grammarFunctions = {};
+  var grammarFunctions = {}
+    , extensions = {};
 
+  var env = {
+    getExtension: getExtension
+  };
+  
+  var parser = require('./parser').createParser(env)
+    , compiler = require('./compiler').createCompiler(env);
+  
   junqi.junqi = junqi;
   junqi.VERSION = CURRENT_VERSION;
   junqi.createJunqiEnvironment = createJunqiEnvironment;
-  junqi.registerExtension = engine.registerExtension;
-  junqi.registerExtensions = engine.registerExtensions;
+  junqi.registerExtension = registerExtension;
+  junqi.registerExtensions = registerExtensions;
 
   // Register the supported grammar functions
   var supportedLanguages = defaultLanguages;
@@ -35,7 +42,11 @@ function createJunqiEnvironment(languages) {
     junqi[language] = registerGrammar(language);
   }
 
+  util.freezeObjects(env, junqi, grammarFunctions);
+  
   return junqi;
+
+  // Implementation ***********************************************************
 
   function junqi(language) {
     var grammarFunction = grammarFunctions[language];
@@ -75,11 +86,67 @@ function createJunqiEnvironment(languages) {
         throw new Error("A query string must be specified");
       }
 
-      var parseTree = engine.parse(language, query)
-        , compiled = engine.compile(parseTree, params);
+      var parseTree = parse(language, query)
+        , compiled = compile(parseTree, params);
 
       return data ? compiled(data) : compiled;
     }
+  }
+
+  function parse(language, query) {
+    return parser.parse(language, query);
+  }
+
+  function compile(parseTree, defaultParams) {
+    var evaluator = compiler.compile(parseTree);
+    return compiledQuery;
+
+    function compiledQuery(data) {
+      if ( !Array.isArray(data) ) {
+        throw new Error("First parameter must be an Array");
+      }
+
+      var params = util.mergeArrays(defaultParams, slice.call(arguments, 1))
+        , ctx = { source: data, params: params }
+        , aliases = {};
+
+      return evaluator(ctx, aliases, data);
+    }
+  }
+
+  function registerExtensions(extensions) {
+    var i;
+    if ( Array.isArray(extensions) ) {
+      for ( i = extensions.length; i--; ) {
+        registerExtension(extensions[i]);
+      }
+    }
+    else {
+      var keys = Object.keys(extensions);
+      for ( i = keys.length; i--; ) {
+        var key = extensions[i];
+        registerExtension(key, extensions[key]);
+      }
+    }
+  }
+
+  function registerExtension(name, func) {
+    if ( typeof name === 'function' ) {
+      func = name;
+      name = func.name && func.name.length ? func.name : null;
+    }
+    if ( typeof name !== 'string' || typeof func !== 'function' ) {
+      throw new Error("A name and function are required");
+    }
+    extensions[name.toLowerCase()] = func;
+  }
+
+  function getExtension(name) {
+    var func = extensions[name.toLowerCase()];
+    if ( typeof func !== 'function' ) {
+      throw new Error("Extension '" + name + "' does not exist!");
+    }
+    return func;
   }
 }
 

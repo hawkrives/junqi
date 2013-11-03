@@ -37,8 +37,15 @@ function createObjectArray(array) {
   return result;
 }
 
+function freezeObjects() {
+  for ( var i = arguments.length; i--; ) {
+    Object.freeze(arguments[i]);
+  }  
+}
+
 // Exports
 exports.makeArray = makeArray;
 exports.mergeArrays = mergeArrays;
 exports.createShadowedArray = createShadowedArray;
 exports.createObjectArray = createObjectArray;
+exports.freezeObjects = freezeObjects;

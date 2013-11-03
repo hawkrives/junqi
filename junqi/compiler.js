@@ -22,13 +22,20 @@ function isLiteral(value) {
   return typeof value !== 'function';
 }
 
-function createCompiler(engine) {
-  return {
+function createCompiler(env) {
+  var getExtension = env.getExtension;
+  
+  var compiler = {
     compile: compile
   };
+  util.freezeObjects(compiler);
+  
+  return compiler;
 
+  // Implementation ***********************************************************
+  
   function compile(parseTree) {
-    return wrapEvaluator(createEvaluator(parseTree));
+    return wrapEvaluator(parseTree);
   }
 
   function wrapEvaluator(node) {
@@ -105,7 +112,7 @@ function createCompiler(engine) {
       case 'tern':
         return createTernEvaluator(node);
       default:
-        throw new Error("Invalid parser node: " + op);
+        throw new Error("Invalid Node in Parse Tree: " + op);
     }
   }
 
@@ -133,7 +140,7 @@ function createCompiler(engine) {
     }
 
     pipeline.push(processGroups ? queryGroupResults : querySetResults);
-    Object.freeze(pipeline);
+    util.freezeObjects(pipeline);
     return stepsEvaluator;
 
     function stepsEvaluator(ctx, aliases, data) {
@@ -303,8 +310,7 @@ function createCompiler(engine) {
       ascending[i] = orderComponent.ascending;
     }
 
-    Object.freeze(evaluators);
-    Object.freeze(ascending);
+    util.freezeObjects(evaluators, ascending);
     return sortStep;
 
     function sortStep(ctx, arr) {
@@ -346,7 +352,7 @@ function createCompiler(engine) {
       evaluators[i] = wrapEvaluator(group[i]);
     }
     
-    Object.freeze(evaluators);
+    util.freezeObjects(evaluators);
     return groupStep;
 
     function groupStep(ctx, arr) {
@@ -390,10 +396,10 @@ function createCompiler(engine) {
       , extensions = [];
     
     for ( var i = aggregate.length; i--; ) {
-      extensions[i] = engine.getExtension(aggregate[i]);
+      extensions[i] = getExtension(aggregate[i]);
     }
     
-    Object.freeze(extensions);
+    util.freezeObjects(extensions);
     return aggregateStep;
 
     function aggregateStep(ctx, arr) {
@@ -426,7 +432,7 @@ function createCompiler(engine) {
       template[key] = createEvaluator(hash[key]);
     }
     
-    Object.freeze(template);
+    util.freezeObjects(template);
     return template;
   }
 
@@ -462,7 +468,7 @@ function createCompiler(engine) {
   }
 
   function createFuncEvaluator(node) {
-    var func = engine.getExtension(node[1])
+    var func = getExtension(node[1])
       , template = createArrayTemplate(node[2]);
     return funcEvaluator;
 
@@ -829,7 +835,7 @@ function createCompiler(engine) {
       template[i] = createEvaluator(items[i]);
     }
     
-    Object.freeze(template);
+    util.freezeObjects(template);
     return template;
   }
 
