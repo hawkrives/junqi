@@ -130,7 +130,7 @@ query
 
 steps
   : leading_step            { $$ = yy.steps($1); }
-  | steps trailing_step     { $$ = yy.steps_push($1, $2); }
+  | steps trailing_step     { $$ = yy.pushStep($1, $2); }
   ;
 
 leading_step
@@ -202,17 +202,17 @@ path
   ;
 
 arg_path
-  : ARGREF                    { $$ = yy.path('path.arg', Number($1)-1); }
-  | arg_path '.' IDENT        { $$ = yy.path_push($1, $3); }
-  | arg_path '[' expr ']'     { $$ = yy.path_push($1, $3); }
+  : ARGREF                    { $$ = yy.argumentPath(Number($1)-1); }
+  | arg_path '.' IDENT        { $$ = yy.pushPath($1, $3); }
+  | arg_path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
   ;
 
 local_path
-  : THIS                        { $$ = yy.path('path.local', null); }
-  | IDENT                       { $$ = yy.path('path.local', null, $1); }
-  | SYMBOL                      { $$ = yy.path('path.symbol', $1); }
-  | local_path '.' IDENT        { $$ = yy.path_push($1, $3); }
-  | local_path '[' expr ']'     { $$ = yy.path_push($1, $3); }
+  : THIS                        { $$ = yy.localPath(null); }
+  | IDENT                       { $$ = yy.localPath(null, $1); }
+  | SYMBOL                      { $$ = yy.symbolPath($1); }
+  | local_path '.' IDENT        { $$ = yy.pushPath($1, $3); }
+  | local_path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
   ;
 
 literal
@@ -251,7 +251,7 @@ obj_non_id: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED;
 obj_item
   : obj_non_id ':' expr     { $$ = [$1, $3]; }
   | IDENT ':' expr          { $$ = [$1, $3]; }
-  | IDENT                   { $$ = [$1, yy.path('path.local', null, $1)]; }
+  | IDENT                   { $$ = [$1, yy.localPath(null, $1)]; }
   ;
 
 selector

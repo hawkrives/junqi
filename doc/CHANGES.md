@@ -1,5 +1,7 @@
 # Change History
 
+## 0.0.7 - 
+
 ## 0.0.6 - Documentation Cleanup
 * Cleaned up the documentation a bit to match reality.
 * Made the extensions sub-module available as the documentation suggests.

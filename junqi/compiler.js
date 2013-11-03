@@ -31,14 +31,12 @@ function createCompiler(engine) {
     return wrapEvaluator(createEvaluator(parseTree));
   }
 
-  // Expression Evaluation ****************************************************
-
   function wrapEvaluator(node) {
     var result = createEvaluator(node);
-    if ( typeof result !== 'function' ) {
-      return evalWrapper;
+    if ( isFunction(result) ) {
+      return result;      
     }
-    return result;
+    return evalWrapper;
 
     function evalWrapper() {
       return result;
@@ -56,11 +54,11 @@ function createCompiler(engine) {
     switch ( op ) {
       case 'steps':
         return createStepsEvaluator(node);
-      case 'path.arg':
+      case 'argpath':
         return createArgPathEvaluator(node);
-      case 'path.local':
+      case 'locpath':
         return createLocalPathEvaluator(node);
-      case 'path.symbol':
+      case 'sympath':
         return createSymbolPathEvaluator(node);
       case 'obj':
         return createObjEvaluator(node);
@@ -111,6 +109,312 @@ function createCompiler(engine) {
     }
   }
 
+  // Step Generation **********************************************************
+
+  function createStepsEvaluator(node) {
+    var pipeline = [querySetup]
+      , stepDefinitions = node[1]
+      , processGroups = false;
+
+    for ( var i = 0, ilen = stepDefinitions.length; i < ilen; i++ ) {
+      var stepDefinition = stepDefinitions[i]
+        , stepType = stepDefinition[0]
+        , evaluator = createStepEvaluator(stepDefinition);
+
+      if ( processGroups ) {
+        evaluator = createGroupEvaluator(evaluator);
+      }
+
+      if ( stepType === 'group' ) {
+        processGroups = true;
+      }
+
+      pipeline.push(evaluator);
+    }
+
+    pipeline.push(processGroups ? queryGroupResults : querySetResults);
+    Object.freeze(pipeline);
+    return stepsEvaluator;
+
+    function stepsEvaluator(ctx, aliases, data) {
+      if ( !Array.isArray(data) ) {
+        data = [data];
+      }
+      for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
+        data = pipeline[i](ctx, data);
+      }
+      return data;
+    }
+
+    function querySetup(ctx, data) {
+      return util.createShadowedArray(data);
+    }
+
+    function queryGroupResults(ctx, data) {
+      return processObject(data, []);
+
+      function processObject(obj, result) {
+        var keys = Object.keys(obj);
+        for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
+          var value = obj[keys[i]];
+          if ( Array.isArray(value) ) {
+            result = result.concat(util.createObjectArray(value));
+          }
+          else {
+            result = processObject(value, result);
+          }
+        }
+        return result;
+      }
+    }
+
+    function querySetResults(ctx, data) {
+      return util.createObjectArray(data);
+    }
+  }
+
+  function createGroupEvaluator(evaluator) {
+    return groupEvaluator;
+
+    function groupEvaluator(ctx, data) {
+      var keys = Object.keys(data);
+      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
+        var key = keys[i]
+          , subset = data[key];
+
+        if ( Array.isArray(subset) ) {
+          data[key] = evaluator(ctx, subset);
+        }
+        else {
+          data[key] = groupEvaluator(ctx, subset);
+        }
+      }
+      return data;
+    }
+  }
+
+  function createStepEvaluator(stepDefinition) {
+    var stepType = stepDefinition[0];
+
+    switch ( stepType ) {
+      case 'filter':
+        return createFilterStep(stepDefinition);
+      case 'select':
+        return createSelectStep(stepDefinition);
+      case 'expand':
+        return createExpandStep(stepDefinition);
+      case 'sort':
+        return createSortStep(stepDefinition);
+      case 'group':
+        return createGroupStep(stepDefinition);
+      case 'aggregate':
+        return createAggregateStep(stepDefinition);
+      default:
+        throw new Error("Invalid step type '" + stepType + "'");
+    }
+  }
+
+  function createFilterStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition[1]);
+    return filterStep;
+
+    function filterStep(ctx, arr) {
+      var elem, i, idx, ilen, result
+        , filtered = false;
+
+      // Scan for the first excluded item, if any
+      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
+          filtered = true;
+          result = slice.call(arr, 0, i);
+          break;
+        }
+      }
+
+      if ( !filtered ) {
+        // The array wasn't filtered, so we can just return it
+        return arr;
+      }
+
+      // Continue generating the filtered result
+      for ( idx = i, i++; i < ilen; i++ ) {
+        elem = arr[i];
+        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
+          result[idx++] = elem;
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSelectStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition[1]);
+    return createSelectIterator(selectStep);
+
+    function selectStep(ctx, aliases, obj) {
+      return [evaluator(ctx, aliases, obj)];
+    }
+  }
+
+  function createExpandStep(stepDefinition) {
+    var evaluator = wrapEvaluator(stepDefinition[1]);
+    return createSelectIterator(expandStep);
+
+    function expandStep(ctx, aliases, obj) {
+      var result = evaluator(ctx, aliases, obj);
+      if ( Array.isArray(result) ) {
+        return result;
+      }
+      else if ( result !== null && result !== undefined ) {
+        return [result];
+      }
+      return [];
+    }
+  }
+
+  function createSelectIterator(evaluator) {
+    return selectIterator;
+
+    function selectIterator(ctx, arr) {
+      var result = [];
+
+      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
+        var elem = arr[i]
+          , aliases = elem.aliases
+          , selectResult = evaluator(ctx, aliases, elem.obj);
+
+        for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
+          result[idx++] = { obj: selectResult[j], aliases: aliases };
+        }
+      }
+      return result;
+    }
+  }
+
+  function createSortStep(stepDefinition) {
+    var order = stepDefinition[1]
+      , evaluators = []
+      , ascending = [];
+    
+    for ( var i = order.length; i--; ) {
+      var orderComponent = order[i];
+      evaluators[i] = wrapEvaluator(orderComponent.expr);
+      ascending[i] = orderComponent.ascending;
+    }
+
+    Object.freeze(evaluators);
+    Object.freeze(ascending);
+    return sortStep;
+
+    function sortStep(ctx, arr) {
+      arr.sort(sortFunction);
+      return arr;
+
+      function sortFunction(item1, item2) {
+        var aliases1 = item1.aliases
+          , aliases2 = item2.aliases
+          , obj1 = item1.obj
+          , obj2 = item2.obj;
+
+        for ( var i = 0, ilen = evaluators.length; i < ilen; i++ ) {
+          var val1 = evaluators[i](ctx, aliases1, obj1)
+            , val2 = evaluators[i](ctx, aliases2, obj2)
+            , result;
+
+          if ( ascending[i] ) {
+            result = ( val1 == val2 ? 0 : val1 > val2 ? 1 : -1 );
+          }
+          else {
+            result = ( val1 == val2 ? 0 : val1 < val2 ? 1 : -1 );
+          }
+
+          if ( result !== 0 ) {
+            return result;
+          }
+        }
+        return 0;
+      }
+    }
+  }
+
+  function createGroupStep(stepDefinition) {
+    var group = stepDefinition[1]
+      , evaluators = [];
+
+    for ( var i = group.length; i--; ) {
+      evaluators[i] = wrapEvaluator(group[i]);
+    }
+    
+    Object.freeze(evaluators);
+    return groupStep;
+
+    function groupStep(ctx, arr) {
+      var result = {};
+
+      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+        var target = result
+          , elem = arr[i]
+          , obj = elem.obj
+          , aliases = elem.aliases
+          , evaluator, key;
+
+        for ( var j = 0, jlen = evaluators.length; j < jlen; j++ ) {
+          evaluator = evaluators[j];
+          key = getGroupKey(evaluator(ctx, aliases, obj));
+          // leaf nodes are arrays, branches are objects
+          target = target[key] || (target[key] = ( j === jlen - 1 ? [] : {} ));
+        }
+
+        target.push(elem);
+      }
+      return result;
+    }
+
+    function getGroupKey(obj) {
+      if ( typeof obj === 'object' ) {
+        if ( !obj.hasOwnProperty(GROUP_KEY) ) {
+          Object.defineProperty(obj, GROUP_KEY, {
+            value: GROUP_KEY + nextGroupKey++
+          });
+        }
+        return obj[GROUP_KEY];
+      }
+      return obj;
+    }
+  }
+
+  // TODO: Result Can Still Carry Forward Group Keys
+  function createAggregateStep(stepDefinition) {
+    var aggregate = stepDefinition[1]
+      , extensions = [];
+    
+    for ( var i = aggregate.length; i--; ) {
+      extensions[i] = engine.getExtension(aggregate[i]);
+    }
+    
+    Object.freeze(extensions);
+    return aggregateStep;
+
+    function aggregateStep(ctx, arr) {
+      var result = util.createObjectArray(arr)
+        , args = [ctx, result];
+
+      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
+        args[1] = result = extensions[i].apply(arr, args);
+      }
+      
+      if ( !Array.isArray(result) ) {
+        if ( result === null || result === undefined ) {
+          return [];
+        }
+        result = [result];
+      }
+      
+      return util.createShadowedArray(result);
+    }
+  }
+
   // Evaluator Generation ***************************************************
 
   function createObjectTemplate(hash) {
@@ -121,6 +425,7 @@ function createCompiler(engine) {
       var key = keys[i];
       template[key] = createEvaluator(hash[key]);
     }
+    
     Object.freeze(template);
     return template;
   }
@@ -519,9 +824,11 @@ function createCompiler(engine) {
 
   function createArrayTemplate(items) {
     var template = [];
+
     for ( var i = items.length; i--; ) {
       template[i] = createEvaluator(items[i]);
     }
+    
     Object.freeze(template);
     return template;
   }
@@ -579,310 +886,6 @@ function createCompiler(engine) {
 
     function localPathRootEvaluator(ctx, aliases, obj) {
       return obj;
-    }
-  }
-
-  // Step Processing **********************************************************
-
-  function createStepsEvaluator(node) {
-    var pipeline = [querySetup]
-      , stepDefinitions = node[1]
-      , processGroups = false;
-
-    for ( var i = 0, ilen = stepDefinitions.length; i < ilen; i++ ) {
-      var stepDefinition = stepDefinitions[i]
-        , stepType = stepDefinition[0]
-        , evaluator = createStepEvaluator(stepDefinition);
-
-      if ( processGroups ) {
-        evaluator = createGroupEvaluator(evaluator);
-      }
-
-      if ( stepType === 'group' ) {
-        processGroups = true;
-      }
-
-      pipeline.push(evaluator);
-    }
-
-    pipeline.push(processGroups ? queryGroupResults : querySetResults);
-    Object.freeze(pipeline);
-    
-    return stepsEvaluator;
-
-    function stepsEvaluator(ctx, aliases, data) {
-      if ( !Array.isArray(data) ) {
-        data = [data];
-      }
-      for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
-        data = pipeline[i](ctx, data);
-      }
-      return data;
-    }
-
-    function querySetup(ctx, data) {
-      return util.createShadowedArray(data);
-    }
-
-    function queryGroupResults(ctx, data) {
-      return processObject(data, []);
-
-      function processObject(obj, result) {
-        var keys = Object.keys(obj);
-        for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
-          var value = obj[keys[i]];
-          if ( Array.isArray(value) ) {
-            result = result.concat(util.createObjectArray(value));
-          }
-          else {
-            result = processObject(value, result);
-          }
-        }
-        return result;
-      }
-    }
-
-    function querySetResults(ctx, data) {
-      return util.createObjectArray(data);
-    }
-  }
-
-  function createGroupEvaluator(evaluator) {
-    return groupEvaluator;
-
-    function groupEvaluator(ctx, data) {
-      var keys = Object.keys(data);
-      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
-        var key = keys[i]
-          , subset = data[key];
-
-        if ( Array.isArray(subset) ) {
-          data[key] = evaluator(ctx, subset);
-        }
-        else {
-          data[key] = groupEvaluator(ctx, subset);
-        }
-      }
-      return data;
-    }
-  }
-  
-  function createStepEvaluator(stepDefinition) {
-    var stepType = stepDefinition[0];
-
-    switch ( stepType ) {
-      case 'filter':
-        return createFilterStep(stepDefinition);
-
-      case 'select':
-        return createSelectStep(stepDefinition);
-
-      case 'expand':
-        return createExpandStep(stepDefinition);
-
-      case 'sort':
-        return createSortStep(stepDefinition);
-
-      case 'group':
-        return createGroupStep(stepDefinition);
-
-      case 'aggregate':
-        return createAggregateStep(stepDefinition);
-
-      default:
-        throw new Error("Invalid step type '" + stepType + "'");
-    }
-  }
-
-  function createFilterStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
-    return filterStep;
-
-    function filterStep(ctx, arr) {
-      var elem, i, idx, ilen, result
-        , filtered = false;
-
-      // Scan for the first excluded item, if any
-      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
-          filtered = true;
-          result = slice.call(arr, 0, i);
-          break;
-        }
-      }
-
-      if ( !filtered ) {
-        // The array wasn't filtered, so we can just return it
-        return arr;
-      }
-
-      // Continue generating the filtered result
-      for ( idx = i, i++; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
-          result[idx++] = elem;
-        }
-      }
-      return result;
-    }
-  }
-
-  function createSelectStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
-    return createSelectIterator(selectStep);
-
-    function selectStep(ctx, aliases, obj) {
-      return [evaluator(ctx, aliases, obj)];
-    }
-  }
-
-  function createExpandStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
-    return createSelectIterator(expandStep);
-
-    function expandStep(ctx, aliases, obj) {
-      var result = evaluator(ctx, aliases, obj);
-      if ( Array.isArray(result) ) {
-        return result;
-      }
-      else if ( result !== null && result !== undefined ) {
-        return [result];
-      }
-      return [];
-    }
-  }
-
-  function createSelectIterator(evaluator) {
-    return selectIterator;
-
-    function selectIterator(ctx, arr) {
-      var result = [];
-
-      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
-        var elem = arr[i]
-          , aliases = elem.aliases
-          , selectResult = evaluator(ctx, aliases, elem.obj);
-
-        for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
-          result[idx++] = { obj: selectResult[j], aliases: aliases };
-        }
-      }
-      return result;
-    }
-  }
-
-  function createSortStep(stepDefinition) {
-    var order = stepDefinition[1]
-      , evaluators = [];
-
-    for ( var i = order.length; i--; ) {
-      evaluators[i] = wrapEvaluator(order[i].expr);
-    }
-    return sortStep;
-
-    function sortStep(ctx, arr) {
-      var ascending = [];
-      for ( var i = order.length; i--; ) {
-        ascending[i] = order[i].ascending;
-      }
-      arr.sort(sortFunction);
-      return arr;
-
-      function sortFunction(item1, item2) {
-        var aliases1 = item1.aliases
-          , aliases2 = item2.aliases
-          , obj1 = item1.obj
-          , obj2 = item2.obj;
-
-        for ( var i = 0, ilen = evaluators.length; i < ilen; i++ ) {
-          var val1 = evaluators[i](ctx, aliases1, obj1)
-            , val2 = evaluators[i](ctx, aliases2, obj2)
-            , result;
-
-          if ( ascending[i] ) {
-            result = ( val1 == val2 ? 0 : val1 > val2 ? 1 : -1 );
-          }
-          else {
-            result = ( val1 == val2 ? 0 : val1 < val2 ? 1 : -1 );
-          }
-
-          if ( result !== 0 ) {
-            return result;
-          }
-        }
-        return 0;
-      }
-    }
-  }
-
-  function createGroupStep(stepDefinition) {
-    var group = stepDefinition[1]
-      , evaluators = [];
-
-    for ( var i = group.length; i--; ) {
-      evaluators[i] = wrapEvaluator(group[i]);
-    }
-    return groupStep;
-
-    function groupStep(ctx, arr) {
-      var result = {};
-
-      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
-        var target = result
-          , elem = arr[i]
-          , obj = elem.obj
-          , aliases = elem.aliases
-          , evaluator, key;
-
-        for ( var j = 0, jlen = evaluators.length; j < jlen; j++ ) {
-          evaluator = evaluators[j];
-          key = getGroupKey(evaluator(ctx, aliases, obj));
-          // leaf nodes are arrays, branches are objects
-          target = target[key] || (target[key] = ( j === jlen - 1 ? [] : {} ));
-        }
-
-        target.push(elem);
-      }
-      return result;
-    }
-
-    function getGroupKey(obj) {
-      if ( typeof obj === 'object' ) {
-        if ( !obj.hasOwnProperty(GROUP_KEY) ) {
-          Object.defineProperty(obj, GROUP_KEY, {
-            value: GROUP_KEY + nextGroupKey++
-          });
-        }
-        return obj[GROUP_KEY];
-      }
-      return obj;
-    }
-  }
-
-  // TODO: Result Can Still Carry Forward Group Keys
-  function createAggregateStep(stepDefinition) {
-    var aggregate = stepDefinition[1]
-      , extensions = [];
-    for ( var i = aggregate.length; i--; ) {
-      extensions[i] = engine.getExtension(aggregate[i]);
-    }
-    return aggregateStep;
-
-    function aggregateStep(ctx, arr) {
-      var result = util.createObjectArray(arr)
-        , args = [ctx, result];
-
-      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
-        args[1] = result = extensions[i].apply(arr, args);
-      }
-      if ( !Array.isArray(result) ) {
-        if ( result === null || result === undefined ) {
-          return [];
-        }
-        result = [result];
-      }
-      return util.createShadowedArray(result);
     }
   }
 }

@@ -25,12 +25,14 @@ function createParser(engine) {
     if ( !parser ) {
       parser = createParser(language);
       parser.yy = {
-        node: yynode,
-        steps: yysteps,
-        steps_push: yysteps_push,
-        step: yystep,
-        path: yypath,
-        path_push: yypath_push
+        node: createNode,
+        steps: createSteps,
+        pushStep: pushStep,
+        step: createStep,
+        localPath: createLocalPath,
+        argumentPath: createArgumentPath,
+        symbolPath: createSymbolPath,
+        pushPath: pushPath
       };
     }
 
@@ -70,36 +72,48 @@ function createParser(engine) {
     return new parserClass();
   }
 
-  function yynode() {
+  function createNode() {
     var result = util.makeArray(arguments);
     result.isNode = true;
     return result;
   }
 
-  function yysteps() {
+  function createSteps() {
     var result = ['steps', util.makeArray(arguments)];
     result.isNode = true;
     return result;
   }
   
-  function yysteps_push(steps, step) {
+  function pushStep(steps, step) {
     steps[1].push(step);
     return steps;
   }
   
-  function yystep() {
+  function createStep() {
     var result = util.makeArray(arguments);
     result.isStep = true;
     return result;
   }
   
-  function yypath(type) {
-    var result = [type, util.makeArray(arguments).slice(1)];
+  function createLocalPath() {
+    var result = ['locpath', util.makeArray(arguments)];
+    result.isNode = true;
+    return result;
+  }
+
+  function createArgumentPath() {
+    var result = ['argpath', util.makeArray(arguments)];
+    result.isNode = true;
+    return result;
+  }
+
+  function createSymbolPath() {
+    var result = ['sympath', util.makeArray(arguments)];
     result.isNode = true;
     return result;
   }
   
-  function yypath_push(path, component) {
+  function pushPath(path, component) {
     path[1].push(component);
     return path;
   }

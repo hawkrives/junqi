@@ -9,7 +9,7 @@
 // Imports
 var util = require('./util');
 
-var CURRENT_VERSION = "0.0.6"
+var CURRENT_VERSION = "0.0.7"
   , defaultLanguages = ['objeq'];
 
 var slice = Array.prototype.slice;
