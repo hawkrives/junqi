@@ -180,26 +180,6 @@ function createCompiler(env) {
     }
   }
 
-  function createGroupEvaluator(evaluator) {
-    return groupEvaluator;
-
-    function groupEvaluator(ctx, data) {
-      var keys = Object.keys(data);
-      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
-        var key = keys[i]
-          , subset = data[key];
-
-        if ( Array.isArray(subset) ) {
-          data[key] = evaluator(ctx, subset);
-        }
-        else {
-          data[key] = groupEvaluator(ctx, subset);
-        }
-      }
-      return data;
-    }
-  }
-
   function createStepEvaluator(stepDefinition) {
     var stepType = stepDefinition[0];
 
@@ -218,6 +198,26 @@ function createCompiler(env) {
         return createAggregateStep(stepDefinition);
       default:
         throw new Error("Invalid step type '" + stepType + "'");
+    }
+  }
+
+  function createGroupEvaluator(evaluator) {
+    return groupEvaluator;
+
+    function groupEvaluator(ctx, data) {
+      var keys = Object.keys(data);
+      for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
+        var key = keys[i]
+          , subset = data[key];
+
+        if ( Array.isArray(subset) ) {
+          data[key] = evaluator(ctx, subset);
+        }
+        else {
+          data[key] = groupEvaluator(ctx, subset);
+        }
+      }
+      return data;
     }
   }
 
