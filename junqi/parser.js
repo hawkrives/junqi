@@ -16,6 +16,7 @@ function createParser(env) {
   var parser = {
     parse: parse
   };
+  
   util.freezeObjects(parser);
   return parser;
 

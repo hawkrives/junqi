@@ -43,7 +43,6 @@ function createJunqiEnvironment(languages) {
   }
 
   util.freezeObjects(env, junqi, grammarFunctions);
-  
   return junqi;
 
   // Implementation ***********************************************************

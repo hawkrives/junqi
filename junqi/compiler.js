@@ -14,18 +14,14 @@ var slice = Array.prototype.slice;
 var GROUP_KEY = '__junqi_group_key__'
   , nextGroupKey = 0;
 
-function isFunction(value) {
-  return typeof value === 'function';
-}
-
 function createCompiler(env) {
   var getExtension = env.getExtension;
   
   var compiler = {
     compile: compile
   };
-  util.freezeObjects(compiler);
   
+  util.freezeObjects(compiler);
   return compiler;
 
   // Implementation ***********************************************************
@@ -36,7 +32,7 @@ function createCompiler(env) {
 
   function wrapEvaluator(node) {
     var result = createEvaluator(node);
-    if ( isFunction(result) ) {
+    if ( typeof result === 'function' ) {
       return result;
     }
     return evalWrapper;
@@ -136,7 +132,6 @@ function createCompiler(env) {
     }
 
     pipeline.push(processGroups ? queryGroupResults : querySetResults);
-    util.freezeObjects(pipeline);
     return stepsEvaluator;
 
     function stepsEvaluator(ctx, aliases, data) {
@@ -297,16 +292,13 @@ function createCompiler(env) {
 
   function createSortStep(stepDefinition) {
     var order = stepDefinition[1]
-      , evaluators = []
-      , ascending = [];
+      , evaluators = [];
     
     for ( var i = order.length; i--; ) {
       var orderComponent = order[i];
-      evaluators[i] = wrapEvaluator(orderComponent.expr);
-      ascending[i] = orderComponent.ascending;
+      var evaluator = evaluators[i] = wrapEvaluator(orderComponent.expr);
+      evaluator.ascending = orderComponent.ascending;
     }
-
-    util.freezeObjects(evaluators, ascending);
     return sortStep;
 
     function sortStep(ctx, arr) {
@@ -320,11 +312,12 @@ function createCompiler(env) {
           , obj2 = item2.obj;
 
         for ( var i = 0, ilen = evaluators.length; i < ilen; i++ ) {
-          var val1 = evaluators[i](ctx, aliases1, obj1)
-            , val2 = evaluators[i](ctx, aliases2, obj2)
+          var evaluator = evaluators[i]
+            , val1 = evaluator(ctx, aliases1, obj1)
+            , val2 = evaluator(ctx, aliases2, obj2)
             , result;
 
-          if ( ascending[i] ) {
+          if ( evaluator.ascending ) {
             result = ( val1 == val2 ? 0 : val1 > val2 ? 1 : -1 );
           }
           else {
@@ -347,8 +340,6 @@ function createCompiler(env) {
     for ( var i = group.length; i--; ) {
       evaluators[i] = wrapEvaluator(group[i]);
     }
-    
-    util.freezeObjects(evaluators);
     return groupStep;
 
     function groupStep(ctx, arr) {
@@ -394,8 +385,6 @@ function createCompiler(env) {
     for ( var i = aggregate.length; i--; ) {
       extensions[i] = getExtension(aggregate[i]);
     }
-    
-    util.freezeObjects(extensions);
     return aggregateStep;
 
     function aggregateStep(ctx, arr) {
@@ -427,8 +416,6 @@ function createCompiler(env) {
       var key = keys[i];
       template[key] = createEvaluator(hash[key]);
     }
-    
-    util.freezeObjects(template);
     return template;
   }
 
@@ -442,8 +429,10 @@ function createCompiler(env) {
 
       for ( var i = keys.length; i--; ) {
         var key = keys[i]
-          , item = template[key];
-        result[key] = isFunction(item) ? item(ctx, aliases, obj) : item;
+          , item = template[key]
+          , item_func = typeof item === 'function';
+        
+        result[key] = item_func ? item(ctx, aliases, obj) : item;
       }
       return result;
     }
@@ -456,8 +445,10 @@ function createCompiler(env) {
     function arrEvaluator(ctx, aliases, obj) {
       var result = [];
       for ( var i = template.length; i--; ) {
-        var item = template[i];
-        result[i] = isFunction(item) ? item(ctx, aliases, obj) : item;
+        var item = template[i]
+          , item_func = typeof item === 'function';
+
+        result[i] = item_func ? item(ctx, aliases, obj) : item;
       }
       return result;
     }
@@ -471,8 +462,10 @@ function createCompiler(env) {
     function funcEvaluator(ctx, aliases, obj) {
       var funcArgs = [];
       for ( var i = template.length; i--; ) {
-        var item = template[i];
-        funcArgs[i] = isFunction(item) ? item(ctx, aliases, obj) : item;
+        var item = template[i]
+          , item_func = typeof item === 'function';
+        
+        funcArgs[i] = item_func ? item(ctx, aliases, obj) : item;
       }
       return func.apply(obj, [ctx].concat(funcArgs));
     }
@@ -480,7 +473,7 @@ function createCompiler(env) {
 
   function createNotEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    return isFunction($1) ? notEvaluator : notEvaluator();
+    return typeof $1 === 'function' ? notEvaluator : notEvaluator();
 
     function notEvaluator(ctx, aliases, obj) {
       return !$1(ctx, aliases, obj);
@@ -489,7 +482,7 @@ function createCompiler(env) {
 
   function createNegEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    return isFunction($1) ? negEvaluator : negEvaluator();
+    return typeof $1 === 'function' ? negEvaluator : negEvaluator();
  
     function negEvaluator(ctx, aliases, obj) {
       return -$1(ctx, aliases, obj);
@@ -499,8 +492,8 @@ function createCompiler(env) {
   function createAndEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? andEvaluator : andEvaluator();
 
@@ -516,8 +509,8 @@ function createCompiler(env) {
   function createOrEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? orEvaluator : orEvaluator();
 
@@ -533,8 +526,8 @@ function createCompiler(env) {
   function createAddEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? addEvaluator : addEvaluator();
 
@@ -548,8 +541,8 @@ function createCompiler(env) {
   function createSubEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? subEvaluator : subEvaluator();
 
@@ -563,8 +556,8 @@ function createCompiler(env) {
   function createMulEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? mulEvaluator : mulEvaluator();
 
@@ -578,8 +571,8 @@ function createCompiler(env) {
   function createDivEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? divEvaluator : divEvaluator();
 
@@ -593,8 +586,8 @@ function createCompiler(env) {
   function createModEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? modEvaluator : modEvaluator();
 
@@ -608,8 +601,8 @@ function createCompiler(env) {
   function createEqEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? eqEvaluator : eqEvaluator();
 
@@ -623,8 +616,8 @@ function createCompiler(env) {
   function createNeqEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? neqEvaluator : neqEvaluator();
 
@@ -638,8 +631,8 @@ function createCompiler(env) {
   function createGtEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? gtEvaluator : gtEvaluator();
 
@@ -653,8 +646,8 @@ function createCompiler(env) {
   function createGteEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? gteEvaluator : gteEvaluator();
 
@@ -668,8 +661,8 @@ function createCompiler(env) {
   function createLtEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? ltEvaluator : ltEvaluator();
 
@@ -683,8 +676,8 @@ function createCompiler(env) {
   function createLteEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? lteEvaluator : lteEvaluator();
 
@@ -698,8 +691,8 @@ function createCompiler(env) {
   function createInEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     return $1_func || $2_func ? inEvaluator : inEvaluator();
 
@@ -722,8 +715,8 @@ function createCompiler(env) {
   function createReEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function';
 
     var regexCache = {};
     return $1_func || $2_func ? reEvaluator : reEvaluator();
@@ -750,7 +743,7 @@ function createCompiler(env) {
   function createAsEvaluator(node) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
-      , $1_func = isFunction($1);
+      , $1_func = typeof $1 === 'function';
 
     return asEvaluator;
 
@@ -765,9 +758,9 @@ function createCompiler(env) {
     var $1 = createEvaluator(node[1])
       , $2 = createEvaluator(node[2])
       , $3 = createEvaluator(node[3])
-      , $1_func = isFunction($1)
-      , $2_func = isFunction($2)
-      , $3_func = isFunction($3);
+      , $1_func = typeof $1 === 'function'
+      , $2_func = typeof $2 === 'function'
+      , $3_func = typeof $3 === 'function';
     
     return $1_func || $2_func || $3_func ? ternEvaluator : ternEvaluator();
 
@@ -786,7 +779,6 @@ function createCompiler(env) {
       template[i] = createEvaluator(items[i]);
     }
     
-    util.freezeObjects(template);
     return template;
   }
 
@@ -809,7 +801,8 @@ function createCompiler(env) {
         }
 
         var comp = path[i]
-          , key = isFunction(comp) ? comp(ctx, aliases, obj) : comp;
+          , comp_func = typeof comp === 'function'
+          , key = comp_func ? comp(ctx, aliases, obj) : comp;
 
         value = value[key];
       }
