@@ -30,6 +30,14 @@ function createCompiler(env) {
     return wrapEvaluator(parseTree);
   }
 
+  function wrapEvaluatorArray(arr) {
+    var result = [];
+    for ( var i = arr.length; i--; ) {
+      result[i] = wrapEvaluator(arr[i]);
+    }  
+    return result;
+  }
+  
   function wrapEvaluator(node) {
     var result = createEvaluator(node);
     if ( typeof result === 'function' ) {
@@ -65,6 +73,8 @@ function createCompiler(env) {
         return createArrEvaluator(node);
       case 'func':
         return createFuncEvaluator(node);
+      case 'merge':
+        return createMergeEvaluator(node);
       case 'not':
         return createNotEvaluator(node);
       case 'neg':
@@ -140,7 +150,8 @@ function createCompiler(env) {
         data = [data];
       }
       for ( var i = 0; i < plen; i++ ) {
-        data = pipeline[i](ctx, data);
+        var f = pipeline[i];
+        data = f(ctx, data);
       }
       return data;
     }
@@ -182,6 +193,8 @@ function createCompiler(env) {
         return createSelectStep(stepDefinition);
       case 'expand':
         return createExpandStep(stepDefinition);
+      case 'extend':
+        return createExtendStep(stepDefinition);
       case 'sort':
         return createSortStep(stepDefinition);
       case 'group':
@@ -214,7 +227,7 @@ function createCompiler(env) {
   }
 
   function createFilterStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
+    var filter = wrapEvaluator(stepDefinition[1]);
     return filterStep;
 
     function filterStep(ctx, arr) {
@@ -224,7 +237,7 @@ function createCompiler(env) {
       // Scan for the first excluded item, if any
       for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
         elem = arr[i];
-        if ( !evaluator(ctx, elem.aliases, elem.obj) ) {
+        if ( !filter(ctx, elem.aliases, elem.obj) ) {
           filtered = true;
           result = slice.call(arr, 0, i);
           break;
@@ -239,7 +252,7 @@ function createCompiler(env) {
       // Continue generating the filtered result
       for ( idx = i, i++; i < ilen; i++ ) {
         elem = arr[i];
-        if ( evaluator(ctx, elem.aliases, elem.obj) ) {
+        if ( filter(ctx, elem.aliases, elem.obj) ) {
           result[idx++] = elem;
         }
       }
@@ -248,20 +261,29 @@ function createCompiler(env) {
   }
 
   function createSelectStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
+    var evaluators = stepDefinition[1]
+      , select;
+    
+    if ( evaluators.length > 1 ) {
+      select = createArrEvaluator(stepDefinition);
+    }
+    else {
+      select = wrapEvaluator(evaluators[0]);
+    }
     return createSelectIterator(selectStep);
 
     function selectStep(ctx, aliases, obj) {
-      return [evaluator(ctx, aliases, obj)];
+      return [select(ctx, aliases, obj)];
     }
   }
 
   function createExpandStep(stepDefinition) {
-    var evaluator = wrapEvaluator(stepDefinition[1]);
+    var expand = wrapEvaluator(stepDefinition[1]);
+    
     return createSelectIterator(expandStep);
 
     function expandStep(ctx, aliases, obj) {
-      var result = evaluator(ctx, aliases, obj);
+      var result = expand(ctx, aliases, obj);
       if ( Array.isArray(result) ) {
         return result;
       }
@@ -269,6 +291,15 @@ function createCompiler(env) {
         return [result];
       }
       return [];
+    }
+  }
+
+  function createExtendStep(stepDefinition) {
+    var extend = createMergeEvaluator(stepDefinition);
+    return createSelectIterator(extendStep);
+
+    function extendStep(ctx, aliases, obj) {
+      return [extend(ctx, aliases, obj)];
     }
   }
 
@@ -336,13 +367,9 @@ function createCompiler(env) {
   }
 
   function createGroupStep(stepDefinition) {
-    var group = stepDefinition[1]
-      , glen = group.length
-      , evaluators = [];
+    var groups = wrapEvaluatorArray(stepDefinition[1])
+      , glen = groups.length;
 
-    for ( var i = glen; i--; ) {
-      evaluators[i] = wrapEvaluator(group[i]);
-    }
     return groupStep;
 
     function groupStep(ctx, arr) {
@@ -352,12 +379,11 @@ function createCompiler(env) {
         var target = result
           , elem = arr[i]
           , obj = elem.obj
-          , aliases = elem.aliases
-          , evaluator, key;
+          , aliases = elem.aliases;
 
         for ( var j = 0; j < glen; j++ ) {
-          evaluator = evaluators[j];
-          key = getGroupKey(evaluator(ctx, aliases, obj));
+          var key = getGroupKey(groups[j](ctx, aliases, obj));
+          
           // leaf nodes are arrays, branches are objects
           target = target[key] || (target[key] = ( j === glen - 1 ? [] : {} ));
         }
@@ -418,8 +444,9 @@ function createCompiler(env) {
 
     for ( var i = keys.length; i--; ) {
       var key = keys[i];
-      template[key] = createEvaluator(hash[key]);
+      template[key] = wrapEvaluator(hash[key]);
     }
+    
     return template;
   }
 
@@ -434,18 +461,15 @@ function createCompiler(env) {
       var result = {};
 
       for ( var i = klen; i--; ) {
-        var key = keys[i]
-          , item = template[key]
-          , item_func = typeof item === 'function';
-        
-        result[key] = item_func ? item(ctx, aliases, obj) : item;
+        var key = keys[i];
+        result[key] = template[key](ctx, aliases, obj);
       }
       return result;
     }
   }
 
   function createArrEvaluator(node) {
-    var template = createArrayTemplate(node[1])
+    var template = wrapEvaluatorArray(node[1])
       , tlen = template.length;
 
     return arrEvaluator;
@@ -453,10 +477,7 @@ function createCompiler(env) {
     function arrEvaluator(ctx, aliases, obj) {
       var result = [];
       for ( var i = tlen; i--; ) {
-        var item = template[i]
-          , item_func = typeof item === 'function';
-
-        result[i] = item_func ? item(ctx, aliases, obj) : item;
+        result[i] = template[i](ctx, aliases, obj);
       }
       return result;
     }
@@ -464,7 +485,7 @@ function createCompiler(env) {
 
   function createFuncEvaluator(node) {
     var func = getExtension(node[1])
-      , template = createArrayTemplate(node[2])
+      , template = wrapEvaluatorArray(node[2])
       , tlen = template.length;
 
     return funcEvaluator;
@@ -472,15 +493,35 @@ function createCompiler(env) {
     function funcEvaluator(ctx, aliases, obj) {
       var funcArgs = [];
       for ( var i = tlen; i--; ) {
-        var item = template[i]
-          , item_func = typeof item === 'function';
-        
-        funcArgs[i] = item_func ? item(ctx, aliases, obj) : item;
+        funcArgs[i] = template[i](ctx, aliases, obj);
       }
       return func.apply(obj, [ctx].concat(funcArgs));
     }
   }
 
+  function createMergeEvaluator(node) {
+    var template = wrapEvaluatorArray(node[1])
+      , tlen = template.length;
+
+    return mergeEvaluator;
+
+    function mergeEvaluator(ctx, aliases, obj) {
+      var result = {}; // We don't mutate the first item
+
+      for ( var i = 0; i < tlen; i++ ) {
+        var elem = template[i](ctx, aliases, obj)
+          , keys = Object.keys(elem);
+
+        for ( var j = 0, jlen = keys.length; j < jlen; j++ ) {
+          var key = keys[j];
+          result[key] = elem[key];
+        }
+      }
+      
+      return result;
+    }    
+  }
+  
   function createNotEvaluator(node) {
     var $1 = createEvaluator(node[1]);
     return typeof $1 === 'function' ? notEvaluator : !$1;
@@ -742,9 +783,12 @@ function createCompiler(env) {
 
       if ( typeof lval === 'string' ) {
         lval = [lval];
+        key = lval;
+      }
+      else {
+        key = lval.join('/');
       }
 
-      key = lval.join('/');
       re = regexCache[key] || (regexCache[key] = RegExp.apply(null, lval));
       return re.test(rval);
     }
@@ -783,18 +827,8 @@ function createCompiler(env) {
     }
   }
 
-  function createArrayTemplate(items) {
-    var template = [];
-
-    for ( var i = items.length; i--; ) {
-      template[i] = createEvaluator(items[i]);
-    }
-    
-    return template;
-  }
-
   function createPathEvaluator(rootEvaluator, pathComponents) {
-    var path = createArrayTemplate(slice.call(pathComponents, 1))
+    var path = wrapEvaluatorArray(slice.call(pathComponents, 1))
       , plen = path.length;
 
     return pathEvaluator;
@@ -813,10 +847,7 @@ function createCompiler(env) {
           return value;
         }
 
-        var comp = path[i]
-          , comp_func = typeof comp === 'function'
-          , key = comp_func ? comp(ctx, aliases, obj) : comp;
-
+        var key = path[i](ctx, aliases, obj);
         value = value[key];
       }
       return value;

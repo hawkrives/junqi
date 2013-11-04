@@ -1,5 +1,26 @@
 # Change History
 
+## 0.0.8 - Extend
+* Altered the SELECT step to allow more convenient array literal generation.  If you specify a comma-separated list, the result will be identical to having selected an array literal.  For example, the following are identical selectors:
+
+    -> firstName, lastName
+    
+    -> [ firstName, lastName ]
+
+But this query will continue to behave as it had before:
+
+    -> firstName + ' ' + lastName
+
+* Added the EXTEND (|>) operator to the objeq grammar.  It will behave almost identically to the extend function provided by many utility libraries (ex: underscore).  The only difference is that it will not mutate the original objects.  For example:
+
+    this as %parent expand children extend this, { child_of: %parent }
+
+or
+
+    this as %parent <: children |> this, { child_of: %parent }
+
+This query will return a flattened list of all children, but with an additional property called child_of that points to their parent.  As you can produce extensions of arbitrary objects, the first item in the list must be 'this' if you want to extend the currently evaluated object.
+
 ## 0.0.7 - Compiler Refactoring
 * In preparation for JSONiq support, refactored the compiler to allow recursive steps and evaluators at the root of the parse tree.
 

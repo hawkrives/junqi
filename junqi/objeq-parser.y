@@ -60,6 +60,7 @@ ws    [\s]
 "where"                      return 'WHERE';
 "select"                     return 'SELECT';
 "expand"                     return 'EXPAND';
+"extend"                     return 'EXTEND';
 "aggregate"                  return 'AGGREGATE';
 ("order"{ws}+)?"by"          return 'ORDER_BY';
 "group"({ws}+"by")?          return 'GROUP_BY';
@@ -70,7 +71,7 @@ ws    [\s]
 "and"                        return 'AND';
 "or"                         return 'OR';
 "not"                        return 'NOT';
-"in"                         return "IN";
+"in"                         return 'IN';
 "=="                         return 'EQ';
 "!="                         return 'NEQ';
 "=~"                         return 'RE';
@@ -79,6 +80,7 @@ ws    [\s]
 "&&"                         return 'AND';
 "||"                         return 'OR';
 "->"                         return 'SELECT';
+"|>"                         return 'EXTEND';
 "<:"                         return 'EXPAND';
 ":="                         return 'AGGREGATE';
 "!"                          return 'NOT';
@@ -255,8 +257,9 @@ obj_item
   ;
 
 selector
-  : SELECT expr       { $$ = yy.step('select', $2); }
-  | EXPAND expr       { $$ = yy.step('expand', $2); }
+  : EXPAND expr       { $$ = yy.step('expand', $2); }
+  | SELECT expr_list  { $$ = yy.step('select', $2); }
+  | EXTEND expr_list  { $$ = yy.step('extend', $2); }
   ;
 
 sorter
