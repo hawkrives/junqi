@@ -1,6 +1,7 @@
 # Change History
 
 ## 0.0.7 - 
+* In preparation for JSONiq support, refactored the compiler to allow recursive steps and evaluators at the root of the parse tree.
 
 ## 0.0.6 - Documentation Cleanup
 * Cleaned up the documentation a bit to match reality.

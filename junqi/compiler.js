@@ -765,10 +765,11 @@ function createCompiler(env) {
     return $1_func || $2_func || $3_func ? ternEvaluator : ternEvaluator();
 
     function ternEvaluator(ctx, aliases, obj) {
-      var cval = $1_func ? $1(ctx, aliases, obj) : $1
-        , tval = $2_func ? $2(ctx, aliases, obj) : $2
-        , fval = $3_func ? $3(ctx, aliases, obj) : $3;
-      return cval ? tval : fval;
+      var cval = $1_func ? $1(ctx, aliases, obj) : $1;
+      if ( cval ) {
+        return $2_func ? $2(ctx, aliases, obj) : $2;
+      }
+      return $3_func ? $3(ctx, aliases, obj) : $3;
     }
   }
 
