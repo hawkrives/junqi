@@ -112,6 +112,7 @@ function createCompiler(env) {
 
   function createStepsEvaluator(node) {
     var pipeline = [querySetup]
+      , plen = pipeline.length
       , stepDefinitions = node[1]
       , processGroups = false;
 
@@ -128,17 +129,17 @@ function createCompiler(env) {
         processGroups = true;
       }
 
-      pipeline.push(evaluator);
+      pipeline[plen++] = evaluator;
     }
 
-    pipeline.push(processGroups ? queryGroupResults : querySetResults);
+    pipeline[plen++] = processGroups ? queryGroupResults : querySetResults;
     return stepsEvaluator;
 
     function stepsEvaluator(ctx, aliases, data) {
       if ( !Array.isArray(data) ) {
         data = [data];
       }
-      for ( var i = 0, ilen = pipeline.length; i < ilen; i++ ) {
+      for ( var i = 0; i < plen; i++ ) {
         data = pipeline[i](ctx, data);
       }
       return data;
@@ -292,9 +293,10 @@ function createCompiler(env) {
 
   function createSortStep(stepDefinition) {
     var order = stepDefinition[1]
+      , olen = order.length
       , evaluators = [];
     
-    for ( var i = order.length; i--; ) {
+    for ( var i = olen; i--; ) {
       var orderComponent = order[i];
       var evaluator = evaluators[i] = wrapEvaluator(orderComponent.expr);
       evaluator.ascending = orderComponent.ascending;
@@ -311,7 +313,7 @@ function createCompiler(env) {
           , obj1 = item1.obj
           , obj2 = item2.obj;
 
-        for ( var i = 0, ilen = evaluators.length; i < ilen; i++ ) {
+        for ( var i = 0; i < olen; i++ ) {
           var evaluator = evaluators[i]
             , val1 = evaluator(ctx, aliases1, obj1)
             , val2 = evaluator(ctx, aliases2, obj2)
@@ -335,9 +337,10 @@ function createCompiler(env) {
 
   function createGroupStep(stepDefinition) {
     var group = stepDefinition[1]
+      , glen = group.length
       , evaluators = [];
 
-    for ( var i = group.length; i--; ) {
+    for ( var i = glen; i--; ) {
       evaluators[i] = wrapEvaluator(group[i]);
     }
     return groupStep;
@@ -352,11 +355,11 @@ function createCompiler(env) {
           , aliases = elem.aliases
           , evaluator, key;
 
-        for ( var j = 0, jlen = evaluators.length; j < jlen; j++ ) {
+        for ( var j = 0; j < glen; j++ ) {
           evaluator = evaluators[j];
           key = getGroupKey(evaluator(ctx, aliases, obj));
           // leaf nodes are arrays, branches are objects
-          target = target[key] || (target[key] = ( j === jlen - 1 ? [] : {} ));
+          target = target[key] || (target[key] = ( j === glen - 1 ? [] : {} ));
         }
 
         target.push(elem);
@@ -380,9 +383,10 @@ function createCompiler(env) {
   // TODO: Result Can Still Carry Forward Group Keys
   function createAggregateStep(stepDefinition) {
     var aggregate = stepDefinition[1]
+      , alen = aggregate.length
       , extensions = [];
     
-    for ( var i = aggregate.length; i--; ) {
+    for ( var i = alen; i--; ) {
       extensions[i] = getExtension(aggregate[i]);
     }
     return aggregateStep;
@@ -391,7 +395,7 @@ function createCompiler(env) {
       var result = util.createObjectArray(arr)
         , args = [ctx, result];
 
-      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
+      for ( var i = 0; i < alen; i++ ) {
         args[1] = result = extensions[i].apply(arr, args);
       }
       
@@ -420,14 +424,16 @@ function createCompiler(env) {
   }
 
   function createObjEvaluator(node) {
-    var template = createObjectTemplate(node[1]);
+    var template = createObjectTemplate(node[1])
+      , keys = Object.keys(template)
+      , klen = keys.length;
+
     return objEvaluator;
 
     function objEvaluator(ctx, aliases, obj) {
-      var keys = Object.keys(template)
-        , result = {};
+      var result = {};
 
-      for ( var i = keys.length; i--; ) {
+      for ( var i = klen; i--; ) {
         var key = keys[i]
           , item = template[key]
           , item_func = typeof item === 'function';
@@ -439,12 +445,14 @@ function createCompiler(env) {
   }
 
   function createArrEvaluator(node) {
-    var template = createArrayTemplate(node[1]);
+    var template = createArrayTemplate(node[1])
+      , tlen = template.length;
+
     return arrEvaluator;
 
     function arrEvaluator(ctx, aliases, obj) {
       var result = [];
-      for ( var i = template.length; i--; ) {
+      for ( var i = tlen; i--; ) {
         var item = template[i]
           , item_func = typeof item === 'function';
 
@@ -456,12 +464,14 @@ function createCompiler(env) {
 
   function createFuncEvaluator(node) {
     var func = getExtension(node[1])
-      , template = createArrayTemplate(node[2]);
+      , template = createArrayTemplate(node[2])
+      , tlen = template.length;
+
     return funcEvaluator;
 
     function funcEvaluator(ctx, aliases, obj) {
       var funcArgs = [];
-      for ( var i = template.length; i--; ) {
+      for ( var i = tlen; i--; ) {
         var item = template[i]
           , item_func = typeof item === 'function';
         
@@ -784,12 +794,14 @@ function createCompiler(env) {
   }
 
   function createPathEvaluator(rootEvaluator, pathComponents) {
-    var path = createArrayTemplate(slice.call(pathComponents, 1));
+    var path = createArrayTemplate(slice.call(pathComponents, 1))
+      , plen = path.length;
+
     return pathEvaluator;
 
     function pathEvaluator(ctx, aliases, obj) {
       var value = rootEvaluator(ctx, aliases, obj);
-      for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
+      for ( var i = 0; i < plen; i++ ) {
         // If we're drilling in, resolve the first Item
         if ( Array.isArray(value) ) {
           if ( value.length === 0 ) {
@@ -814,6 +826,7 @@ function createCompiler(env) {
   function createArgPathEvaluator(node) {
     var pathComponents = node[1]
       , index = pathComponents[0];
+
     return createPathEvaluator(argPathRootEvaluator, pathComponents);
 
     function argPathRootEvaluator(ctx /* aliases, obj */) {
@@ -824,6 +837,7 @@ function createCompiler(env) {
   function createSymbolPathEvaluator(node) {
     var pathComponents = node[1]
       , symbol = pathComponents[0];
+
     return createPathEvaluator(symbolPathRootEvaluator, pathComponents);
 
     function symbolPathRootEvaluator(ctx, aliases, obj) {
@@ -833,6 +847,7 @@ function createCompiler(env) {
 
   function createLocalPathEvaluator(node) {
     var pathComponents = node[1];
+
     return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
     function localPathRootEvaluator(ctx, aliases, obj) {
