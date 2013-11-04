@@ -297,8 +297,8 @@ function createCompiler(env) {
       , evaluators = [];
     
     for ( var i = olen; i--; ) {
-      var orderComponent = order[i];
-      var evaluator = evaluators[i] = wrapEvaluator(orderComponent.expr);
+      var orderComponent = order[i]
+        , evaluator = evaluators[i] = wrapEvaluator(orderComponent.expr);
       evaluator.ascending = orderComponent.ascending;
     }
     return sortStep;
@@ -320,10 +320,10 @@ function createCompiler(env) {
             , result;
 
           if ( evaluator.ascending ) {
-            result = ( val1 == val2 ? 0 : val1 > val2 ? 1 : -1 );
+            result = val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
           }
           else {
-            result = ( val1 == val2 ? 0 : val1 < val2 ? 1 : -1 );
+            result = val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
           }
 
           if ( result !== 0 ) {
@@ -483,7 +483,7 @@ function createCompiler(env) {
 
   function createNotEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    return typeof $1 === 'function' ? notEvaluator : notEvaluator();
+    return typeof $1 === 'function' ? notEvaluator : !$1;
 
     function notEvaluator(ctx, aliases, obj) {
       return !$1(ctx, aliases, obj);
@@ -492,8 +492,8 @@ function createCompiler(env) {
 
   function createNegEvaluator(node) {
     var $1 = createEvaluator(node[1]);
-    return typeof $1 === 'function' ? negEvaluator : negEvaluator();
- 
+    return typeof $1 === 'function' ? negEvaluator : -$1;
+
     function negEvaluator(ctx, aliases, obj) {
       return -$1(ctx, aliases, obj);
     }
@@ -713,10 +713,10 @@ function createCompiler(env) {
         return rval.indexOf(item) !== -1;
       }
       else if ( typeof rval === 'object' ) {
-        return ($1_func ? $1(ctx, aliases, obj) : $1) in rval;
+        return ( $1_func ? $1(ctx, aliases, obj) : $1 ) in rval;
       }
       else if ( rval !== null && rval !== undefined ) {
-        return ($1_func ? $1(ctx, aliases, obj) : $1) == rval;
+        return ( $1_func ? $1(ctx, aliases, obj) : $1 ) == rval;
       }
       return false;
     }
