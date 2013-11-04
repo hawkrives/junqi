@@ -51,6 +51,7 @@ exports.predicates = nodeunit.testCase({
   "Simple Maths Work": function (test) {
     this.resultCountOk(test, "age + 100 >= 145", 8);
     this.resultCountOk(test, "age - 45 > 0", 6);
+    this.resultCountOk(test, "age - 46 == -1", 2);
     this.resultCountOk(test, "age * 2 >= 90", 8);
     this.resultCountOk(test, "age / 2 > 25", 5);
     this.resultCountOk(test, "age % 5 != 0", 3);
