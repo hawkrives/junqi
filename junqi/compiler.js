@@ -34,7 +34,7 @@ function createCompiler(env) {
     var result = [];
     for ( var i = arr.length; i--; ) {
       result[i] = wrapEvaluator(arr[i]);
-    }  
+    }
     return result;
   }
   
@@ -519,7 +519,7 @@ function createCompiler(env) {
       }
       
       return result;
-    }    
+    }
   }
   
   function createNotEvaluator(node) {
