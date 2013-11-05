@@ -105,6 +105,17 @@ This Query generates new Objects as its Result Set using a shorthand for directl
 
     lastName == 'Beck' -> { firstName, lastName }
 
+#### The Extend Selector
+The 'Extend' Selector is similar to the General Purpose Selector except that a list of multiple Objects is specified and those Objects are merged into a single resulting Object.
+
+    where this as %parent expand children extend this, { child_of: %parent }
+
+You can also use the shorthand:
+
+    this as %parent <: children |> this, { child_of: %parent }
+
+This query will return a flattened list of all children, but with an additional property called child_of that points to their parent.  As you can produce extensions of arbitrary objects, the first item in the list must be 'this' if you want to extend the currently evaluated object.
+    
 #### The Expand Selector
 Unlike a General Purpose Selector, an 'Expand' Selector may not yield a one-to-one mapping between the Working Set and Result Set.  The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
 

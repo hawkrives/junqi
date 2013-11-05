@@ -62,11 +62,10 @@ And then call the function from within your Query:
 
 **Note:** If you've created an isolated junqi environment with `junqi.createJunqiEnvironment()` then you will need to register your extension against that environment.
 
-## Five Simple Rules for Extension Writers
+## Four Simple Rules for Extension Writers
 1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
 2. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself
-3. Extensions can be called from the Predicate, Selector and Aggregator, but not from the Collator
-4. Inside of your Extension, the `this` variable will differ depending on context:
+3. Inside of your Extension, the `this` variable will differ depending on context:
   * If used in the Predicate or Selector, it will refer to the current Item being processed
   * If used as an Aggregator, it will refer to the Intermediate Result (an Array) that was passed into the Aggregator chain
-5. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on
+4. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on
