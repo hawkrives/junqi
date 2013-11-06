@@ -6,4 +6,4 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-exports.createNodeFitler = require('./node').createNodeFilter;
+exports.createNodeFilter = require('./node').createNodeFilter;
