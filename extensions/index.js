@@ -77,12 +77,12 @@ var DefaultExtensions = [
   // Other Math Extensions ****************************************************
   
   function avg(ctx, value) {
-    if ( Array.isArray(value) ) {
-      if ( value.length === 0 ) return 0;
-      for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
-      return r / l;
+    if ( !Array.isArray(value) ) {
+      return typeof value === 'number' ? value : NaN;
     }
-    return typeof value === 'number' ? value : NaN;
+    if ( value.length === 0 ) return 0;
+    for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
+    return r / l;
   },
 
   function count(ctx, value) {
@@ -90,26 +90,30 @@ var DefaultExtensions = [
   },
 
   function max(ctx, value) {
-    if ( Array.isArray(value) ) return Math.max.apply(Math, value);
-    return typeof value === 'number' ? value : NaN;
+    if ( !Array.isArray(value) ) {
+      return typeof value === 'number' ? value : NaN;
+    }
+    return Math.max.apply(Math, value);
   },
 
   function median(ctx, value) {
-    if ( Array.isArray(value) ) {
-      if ( value.length === 0 ) return 0;
-      var temp = value.slice(0).order();
-      if ( temp.length % 2 === 0 ) {
-        var mid = temp.length / 2;
-        return (temp[mid - 1] + temp[mid]) / 2;
-      }
-      return temp[(temp.length + 1) / 2];
+    if ( !Array.isArray(value) ) {
+      return typeof value === 'number' ? value : NaN;
     }
-    return typeof value === 'number' ? value : NaN;
+    if ( value.length === 0 ) return 0;
+    var temp = value.slice(0).order();
+    if ( temp.length % 2 === 0 ) {
+      var mid = temp.length / 2;
+      return (temp[mid - 1] + temp[mid]) / 2;
+    }
+    return temp[(temp.length + 1) / 2];
   },
 
   function min(ctx, value) {
-    if ( Array.isArray(value) ) return Math.min.apply(Math, value);
-    return typeof value === 'number' ? value : NaN;
+    if ( !Array.isArray(value) ) {
+      return typeof value === 'number' ? value : NaN;
+    }
+    return Math.min.apply(Math, value);
   },
 
   function number(ctx, value) {
@@ -117,26 +121,35 @@ var DefaultExtensions = [
   },
 
   function sum(ctx, value) {
-    if ( Array.isArray(value) ) {
-      for ( var i = 0, res = 0, l = value.length; i < l; res += value[i++] );
-      return res;
+    if ( !Array.isArray(value) ) {
+      return typeof value === 'number' ? value : NaN;
     }
-    return typeof value === 'number' ? value : NaN;
-  },
+    for ( var i = 0, res = 0, l = value.length; i < l; res += value[i++] );
+    return res;
+},
 
   // Array Extensions *********************************************************
 
   function first(ctx, value) {
-    if ( Array.isArray(value) ) return value[0];
-    return value;
+    if ( !Array.isArray(value) ) {
+      return value;
+    }
+    return value[0];
   },
 
   function last(ctx, value) {
-    if ( Array.isArray(value) ) {
-      if ( value.length ) return value[value.length - 1];
-      return null;
+    if ( !Array.isArray(value) ) {
+      return value;
     }
-    return value;
+    if ( value.length ) return value[value.length - 1];
+    return null;
+  },
+
+  function unique(ctx, value) {
+    if ( !Array.isArray(value) ) {
+      return value;
+    }
+    // TODO: This
   },
 
   // String Extensions ********************************************************

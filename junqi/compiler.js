@@ -836,13 +836,6 @@ function createCompiler(env) {
     function pathEvaluator(ctx, aliases, obj) {
       var value = rootEvaluator(ctx, aliases, obj);
       for ( var i = 0; i < plen; i++ ) {
-        // If we're drilling in, resolve the first Item
-        if ( Array.isArray(value) ) {
-          if ( value.length === 0 ) {
-            return null;
-          }
-          value = value[0];
-        }
         if ( value === null || value === undefined ) {
           return value;
         }
