@@ -14,11 +14,11 @@
 Is a pain in the ass and makes it hard to maintain.  So we'll just allow this as well:
 
     var query = objeq(function() {/*
-      WHERE lastName == %1 
+      WHERE lastName == %1
         AND firstName == %2
       SELECT {
         fullName: firstName + ' ' + lastName
-      }      
+      }
     */});
 
 This way, you can remember what it was like to embed JavaScript into a web page back in the late 1990's.  The query is extracted from the function body's comment, everything else will be ignored for now.
