@@ -1,6 +1,6 @@
 # Change History
 
-## 0.0.9 - Fixed Paths
+## 0.0.9 - Fixed Array Paths
 * Drilling into an Array was broken.  For whatever brain-dead reason, I was pulling the first element and then drilling into that.   I'm not doing that anymore.
 
 ## 0.0.8 - Extend
