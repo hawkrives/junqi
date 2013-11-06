@@ -1,5 +1,8 @@
 # Change History
 
+## 0.0.9 - Fixed Paths
+* Drilling into an Array was broken.  For whatever brain-dead reason, I was pulling the first element and then drilling into that.   I'm not doing that anymore.
+
 ## 0.0.8 - Extend
 * Altered the SELECT step to allow more convenient array literal generation.  If you specify a comma-separated list, the result will be identical to having selected an array literal.  For example, the following are identical selectors:
 
