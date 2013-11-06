@@ -9,10 +9,13 @@
 // Imports
 var util = require('./util');
 
-var CURRENT_VERSION = "0.0.9"
+var CURRENT_VERSION = "0.0.10"
   , defaultLanguages = ['objeq'];
 
 var slice = Array.prototype.slice;
+
+var funcRegex = /^function[^\{]*\{\s*(\/\*\s*([\s\S]*)\*\/)?/m
+  , commentPrefixRegex = /^([\s*]+)?([^\s*].*)$/;
 
 function createJunqiEnvironment(languages) {
   var grammarFunctions = {}
@@ -56,20 +59,40 @@ function createJunqiEnvironment(languages) {
   }
 
   function processArguments(args) {
-    var result = {}
+    var processed = {}
       , i = 0;
 
     if ( Array.isArray(args[0]) ) {
-      result.data = args[i++];
+      processed.data = args[i++];
     }
 
     if ( typeof args[i] === 'string' ) {
-      result.query = args[i++];
+      processed.query = args[i++];
+    }
+    else if ( typeof args[i] === 'function' ) {
+      processed.query = parseArgumentsFunction(args[i++]);
     }
 
-    result.params = args.slice(i);
-    return result;
+    processed.params = args.slice(i);
+    return processed;
   }
+
+  function parseArgumentsFunction(func) {
+    var match = funcRegex.exec(func.toString())
+      , comments = match[2].split('\n')
+      , code = [];
+
+    for ( var i = 0, len = comments.length; i < len; i++ ) {
+      var match = commentPrefixRegex.exec(comments[i]);
+      if ( !match ) { 
+        continue;
+      }
+      code.push(match[2]);
+    }
+
+    return code.join('\n');
+  }
+
 
   function registerGrammar(language) {
     grammarFunctions[language] = grammarFunction;

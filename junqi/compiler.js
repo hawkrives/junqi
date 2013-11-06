@@ -150,8 +150,7 @@ function createCompiler(env) {
         data = [data];
       }
       for ( var i = 0; i < plen; i++ ) {
-        var f = pipeline[i];
-        data = f(ctx, data);
+        data = pipeline[i](ctx, data);
       }
       return data;
     }

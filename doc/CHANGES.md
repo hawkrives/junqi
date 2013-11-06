@@ -1,5 +1,28 @@
 # Change History
 
+## 0.0.10 - Query Compilation Convenience
+* Having to compile a query like this:
+
+    var query = objeq(
+      "WHERE lastName == %1 " +
+      "  AND firstName == %2 " +
+      "SELECT { " +
+      "  fullName: firstName + ' ' + lastName " +
+      "}"
+    );
+
+Is a pain in the ass and makes it hard to maintain.  So we'll just allow this as well:
+
+    var query = objeq(function() {/*
+      WHERE lastName == %1 
+        AND firstName == %2
+      SELECT {
+        fullName: firstName + ' ' + lastName
+      }      
+    */});
+
+This way, you can remember what it was like to embed JavaScript into a web page back in the late 1990's.  The query is extracted from the function body's comment, everything else will be ignored for now.
+
 ## 0.0.9 - Fixed Array Paths
 * Drilling into an Array was broken.  For whatever brain-dead reason, I was pulling the first element and then drilling into that.   I'm not doing that anymore.
 
