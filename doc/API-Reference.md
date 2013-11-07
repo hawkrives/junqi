@@ -67,7 +67,7 @@ Defining Extension Functions for junqi is a relatively painless process.  Simply
 
 ```javascript
 var junqi = require('junqi');
-junqi.registerExtension('hello', function (ctx, firstName) {
+junqi.registerExtension('hello', function (firstName) {
   return "Hello " + firstName;
 });
 ```
@@ -75,7 +75,7 @@ junqi.registerExtension('hello', function (ctx, firstName) {
 If you don't provide a name, junqi will inspect the function itself for its name.  So the following call yields the same result:
 
 ```javascript
-junqi.registerExtension(function hello(ctx, firstName) {
+junqi.registerExtension(function hello(firstName) {
   return "Hello " + firstName;
 });
 ```
