@@ -15,45 +15,53 @@ Getting started is so easy!
 ### Installation
 Pre-built version of the parsers are already included, but if you'd like to build them yourself then you can do so by issuing the following command from the package's top-level directory:
 
-    > npm install; npm run-script build
+```bash
+npm install; npm run-script build
+```
 
 This will also install any development dependencies and run the nodeunit test suite.
 
 ### Inclusion in Node.js
 Assuming you have installed the junqi package into your project with npm, you can include it in a Node.js module with the following:
 
-    var junqi = require('junqi');
+```javascript
+var junqi = require('junqi');
+```
 
 For access to a specific grammar:
 
-    var objeq = require('junqi').objeq;
+```javascript
+var objeq = require('junqi').objeq;
+```
 
 ### Performing a First Query
 Fire up the Node.js REPL and type the following into the console (minus comments):
 
-    // Import the objeq Grammar
-    var objeq = require('junqi').objeq;
+```javascript
+// Import the objeq Grammar
+var objeq = require('junqi').objeq;
 
-    // Create a data Array to be queried later
-    var data = [
-      { name: 'Barbara', age: 25, gender: 'female' },
-      { name: 'Ronald', age: 62, gender: 'male' },
-      { name: 'Robert', age: 54, gender: 'male' },
-      { name: 'Jessica', age: 48, gender: 'female' }
-    ];
+// Create a data Array to be queried later
+var data = [
+  { name: 'Barbara', age: 25, gender: 'female' },
+  { name: 'Ronald', age: 62, gender: 'male' },
+  { name: 'Robert', age: 54, gender: 'male' },
+  { name: 'Jessica', age: 48, gender: 'female' }
+];
 
-    // This will compile a junqi query that filters only those
-    // Objects having a name property starting with 'Ro' and then
-    // returns a string that combines name and age properties
-    var query = objeq("'^Ro' =~ name -> name + ' is ' + age");
+// This will compile a junqi query that filters only those
+// Objects having a name property starting with 'Ro' and then
+// returns a string that combines name and age properties
+var query = objeq("'^Ro' =~ name -> name + ' is ' + age");
 
-    // This performs the query against the 'data' Array and
-    // returns the result in 'res'
-    var res = query(data);
+// This performs the query against the 'data' Array and
+// returns the result in 'res'
+var res = query(data);
 
-    // --> res now contains:
-    //  [ 'Ronald is 62 years old',
-    //    'Robert is 54 years old' ]
+// --> res now contains:
+//  [ 'Ronald is 62 years old',
+//    'Robert is 54 years old' ]
+```
 
 ## More Information
 For more information about how to interact with the junqi library and its API, see the API Reference at doc/API-Reference.md
