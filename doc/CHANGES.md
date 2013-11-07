@@ -25,7 +25,7 @@ var query = objeq(function() {/*
 */});
 ```
 
-This way, you can remember what it was like to embed JavaScript into a web page back in the late 1990's.  The query is extracted from the function body's comment, everything else will be ignored for now.
+This way, you can remember what it was like to embed JavaScript into a web page back in the late 1990s.  The query is extracted from the function body's comment, everything else will be ignored for now.
 
 ## 0.0.9 - Fixed Array Paths
 * Drilling into an Array was broken.  For whatever brain-dead reason, I was pulling the first element and then drilling into that.   I'm not doing that anymore.
