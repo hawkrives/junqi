@@ -109,7 +109,6 @@ function createJunqiEnvironment(languages) {
     processed.query = code.join('\n');
   }
 
-
   function registerGrammar(language) {
     grammarFunctions[language] = grammarFunction;
     return grammarFunction;
@@ -118,6 +117,7 @@ function createJunqiEnvironment(languages) {
       var processed = processArguments(util.makeArray(arguments))
         , data = processed.data
         , query = processed.query
+        , functionName = processed.functionName
         , defaultArgs = processed.defaultArgs || []
         , argNames = processed.argNames || [];
 
@@ -128,7 +128,13 @@ function createJunqiEnvironment(languages) {
       var parseTree = parse(language, query)
         , compiled = compile(parseTree, argNames, defaultArgs);
 
-      return data ? compiled(data) : compiled;
+      if ( data ) {
+        return compiled(data);
+      }
+      else if ( functionName && !extensions.hasOwnProperty(functionName) ) {
+        registerExtension(functionName, compiled);
+      }
+      return compiled;
     }
   }
 
@@ -153,7 +159,7 @@ function createJunqiEnvironment(languages) {
         var arg = args[i];
         params[i] = arg;
         if ( i < alen ) {
-          params[argNames[i]] = arg
+          params[argNames[i]] = arg;
         }
       }
       
