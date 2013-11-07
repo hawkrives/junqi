@@ -61,12 +61,10 @@ function createCompiler(env) {
     switch ( op ) {
       case 'steps':
         return createStepsEvaluator(node);
-      case 'argpath':
-        return createArgPathEvaluator(node);
-      case 'locpath':
+      case 'local':
         return createLocalPathEvaluator(node);
-      case 'sympath':
-        return createSymbolPathEvaluator(node);
+      case 'param':
+        return createParamPathEvaluator(node);
       case 'obj':
         return createObjEvaluator(node);
       case 'arr':
@@ -341,7 +339,7 @@ function createCompiler(env) {
         var obj1 = item1.obj
           , obj2 = item2.obj
           , params1 = item1.params
-          , params2 = item2.params
+          , params2 = item2.params;
 
         for ( var i = 0; i < olen; i++ ) {
           var evaluator = evaluators[i]
@@ -846,18 +844,17 @@ function createCompiler(env) {
     }
   }
 
-  function createArgPathEvaluator(node) {
-    var pathComponents = node[1]
-      , index = pathComponents[0];
+  function createLocalPathEvaluator(node) {
+    var pathComponents = node[1];
 
-    return createPathEvaluator(argPathRootEvaluator, pathComponents);
+    return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
-    function argPathRootEvaluator(obj, params) {
-      return params[index];
+    function localPathRootEvaluator(obj /*, params */) {
+      return obj;
     }
   }
 
-  function createSymbolPathEvaluator(node) {
+  function createParamPathEvaluator(node) {
     var pathComponents = node[1]
       , symbol = pathComponents[0];
 
@@ -866,17 +863,7 @@ function createCompiler(env) {
     function symbolPathRootEvaluator(obj, params) {
       return params[symbol];
     }
-  }
-
-  function createLocalPathEvaluator(node) {
-    var pathComponents = node[1];
-
-    return createPathEvaluator(localPathRootEvaluator, pathComponents);
-
-    function localPathRootEvaluator(obj, params) {
-      return obj;
-    }
-  }
+  }  
 }
 
 // Exports

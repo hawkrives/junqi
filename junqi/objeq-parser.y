@@ -48,7 +48,7 @@ ws    [\s]
 
 "%"[A-Za-z_$][A-Za-z_$0-9]* {
   yytext = yytext.substr(1);
-  return 'SYMBOL';
+  return 'PARAM';
 }
 
 {ws}+                        /* skip whitespace */
@@ -179,7 +179,7 @@ expr
   | expr LT expr       { $$ = yy.node('lt', $1, $3); }
   | expr LTE expr      { $$ = yy.node('lte', $1, $3); }
   | expr IN expr       { $$ = yy.node('in', $1, $3); }
-  | expr AS SYMBOL     { $$ = yy.node('as', $1, $3); }
+  | expr AS PARAM      { $$ = yy.node('as', $1, $3); }
   | NOT expr           { $$ = yy.node('not', $2); }
   | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'       { $$ = $2; }
@@ -199,22 +199,12 @@ func
   ;
 
 path
-  : arg_path
-  | local_path
-  ;
-
-arg_path
-  : ARGREF                    { $$ = yy.argumentPath(Number($1)-1); }
-  | arg_path '.' IDENT        { $$ = yy.pushPath($1, $3); }
-  | arg_path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
-  ;
-
-local_path
-  : THIS                        { $$ = yy.localPath(null); }
-  | IDENT                       { $$ = yy.localPath(null, $1); }
-  | SYMBOL                      { $$ = yy.symbolPath($1); }
-  | local_path '.' IDENT        { $$ = yy.pushPath($1, $3); }
-  | local_path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
+  : THIS                  { $$ = yy.localPath(null); }
+  | IDENT                 { $$ = yy.localPath(null, $1); }
+  | PARAM                 { $$ = yy.paramPath($1); }
+  | ARGREF                { $$ = yy.paramPath(Number($1) - 1); }
+  | path '.' IDENT        { $$ = yy.pushPath($1, $3); }
+  | path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
   ;
 
 literal

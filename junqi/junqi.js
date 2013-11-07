@@ -18,7 +18,7 @@ var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
   , argNameSplitRegex = /\s*,\s*/m
   , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/m;
 
-function createJunqiEnvironment(languages) {
+function createJunqiEnvironment(languages, autoRegister) {
   var grammarFunctions = {}
     , extensions = {};
 
@@ -131,7 +131,7 @@ function createJunqiEnvironment(languages) {
       if ( data ) {
         return compiled(data);
       }
-      else if ( functionName && !extensions.hasOwnProperty(functionName) ) {
+      else if ( autoRegister && functionName && !getExtension(functionName) ) {
         registerExtension(functionName, compiled);
       }
       return compiled;

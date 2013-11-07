@@ -22,14 +22,17 @@ function mergeArrays(arr1, arr2) {
 }
 
 function createShadowedArray(array, params) {
-  var result = [];
+  var result = []
+    , i;
+  
   if ( params ) {
-    for ( var i = array.length; i--; ) {
+    // Inheriting Parameters
+    for ( i = array.length; i--; ) {
       result[i] = { obj: array[i], params: Object.create(params) }
     }
   }
   else {
-    for ( var i = array.length; i--; ) {
+    for ( i = array.length; i--; ) {
       result[i] = { obj: array[i], params: {} }
     }    
   }

@@ -28,15 +28,14 @@ function createParser(env) {
       , parser = parserPool.pop();
 
     if ( !parser ) {
-      parser = createParser(language);
+      parser = createLanguageParser(language);
       parser.yy = {
         node: createNode,
         steps: createSteps,
         pushStep: pushStep,
         step: createStep,
         localPath: createLocalPath,
-        argumentPath: createArgumentPath,
-        symbolPath: createSymbolPath,
+        paramPath: createParamPath,
         pushPath: pushPath
       };
     }
@@ -49,7 +48,7 @@ function createParser(env) {
     return steps;
   }
 
-  function loadParser(language) {
+  function loadLanguageParser(language) {
     var mod;
 
     if ( !/^[a-zA-Z]+$/.test(language) ) {
@@ -69,10 +68,10 @@ function createParser(env) {
     return mod.Parser;
   }
 
-  function createParser(language) {
+  function createLanguageParser(language) {
     var parserClass = parserClasses[language];
     if ( !parserClass ) {
-      parserClass = parserClasses[language] = loadParser(language);
+      parserClass = parserClasses[language] = loadLanguageParser(language);
     }
     return new parserClass();
   }
@@ -101,19 +100,13 @@ function createParser(env) {
   }
   
   function createLocalPath() {
-    var result = ['locpath', util.makeArray(arguments)];
+    var result = ['local', util.makeArray(arguments)];
     result.isNode = true;
     return result;
   }
 
-  function createArgumentPath() {
-    var result = ['argpath', util.makeArray(arguments)];
-    result.isNode = true;
-    return result;
-  }
-
-  function createSymbolPath() {
-    var result = ['sympath', util.makeArray(arguments)];
+  function createParamPath() {
+    var result = ['param', util.makeArray(arguments)];
     result.isNode = true;
     return result;
   }
