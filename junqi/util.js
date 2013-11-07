@@ -21,10 +21,17 @@ function mergeArrays(arr1, arr2) {
   return result;
 }
 
-function createShadowedArray(array) {
+function createShadowedArray(array, params) {
   var result = [];
-  for ( var i = array.length; i--; ) {
-    result[i] = { obj: array[i], aliases: {} };
+  if ( params ) {
+    for ( var i = array.length; i--; ) {
+      result[i] = { obj: array[i], params: Object.create(params) }
+    }
+  }
+  else {
+    for ( var i = array.length; i--; ) {
+      result[i] = { obj: array[i], params: {} }
+    }    
   }
   return result;
 }

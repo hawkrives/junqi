@@ -41,6 +41,17 @@ var res = ageAndGender(data);
 // --> res now contains ['Jessica']
 ```
 
+This could have also been done using a Function payload, which creates named parameters in addition to numbered ones.  It also allows for better readability and maintenance, especially when your queries get large.
+```javascript
+var objeq = require('junqi').objeq;
+var ageAndGender = objeq(function (age, gender) {/*
+  age > %age && gender == %gender"
+*/}, 40, 'female');
+
+var res = ageAndGender(data);
+// --> res now contains ['Jessica']
+```
+
 In this way, the parameters that are encountered by the `objeq()` function are treated as defaults for the compiled query, but can be overridden when calling the closure:
 
 ```javascript
@@ -78,10 +89,9 @@ var res = objeq(data, "-> hello(firstName)");
 
 **Note:** If you've created an isolated junqi environment with `junqi.createJunqiEnvironment()` then you will need to register your extension against that environment.
 
-## Four Simple Rules for Extension Writers
+## Three Simple Rules for Extension Writers
 1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
-2. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself
-3. Inside of your Extension, the `this` variable will differ depending on context:
+2. Inside of your Extension, the `this` variable will differ depending on context:
   * If used in the Predicate or Selector, it will refer to the current Item being processed
   * If used as an Aggregator, it will refer to the Intermediate Result (an Array) that was passed into the Aggregator chain
-4. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on
+3. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on

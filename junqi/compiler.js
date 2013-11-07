@@ -145,21 +145,21 @@ function createCompiler(env) {
     pipeline[plen++] = processGroups ? queryGroupResults : querySetResults;
     return stepsEvaluator;
 
-    function stepsEvaluator(ctx, aliases, data) {
+    function stepsEvaluator(data, params) {
       if ( !Array.isArray(data) ) {
         data = [data];
       }
       for ( var i = 0; i < plen; i++ ) {
-        data = pipeline[i](ctx, data);
+        data = pipeline[i](data, params);
       }
       return data;
     }
 
-    function querySetup(ctx, data) {
-      return util.createShadowedArray(data);
+    function querySetup(data, params) {
+      return util.createShadowedArray(data, params);
     }
 
-    function queryGroupResults(ctx, data) {
+    function queryGroupResults(data /* , params */) {
       return processObject(data, []);
 
       function processObject(obj, result) {
@@ -177,7 +177,7 @@ function createCompiler(env) {
       }
     }
 
-    function querySetResults(ctx, data) {
+    function querySetResults(data /* , params */) {
       return util.createObjectArray(data);
     }
   }
@@ -208,17 +208,17 @@ function createCompiler(env) {
   function createGroupEvaluator(evaluator) {
     return groupEvaluator;
 
-    function groupEvaluator(ctx, data) {
+    function groupEvaluator(data, params) {
       var keys = Object.keys(data);
       for ( var i = 0, ilen = keys.length; i < ilen; i++ ) {
         var key = keys[i]
           , subset = data[key];
 
         if ( Array.isArray(subset) ) {
-          data[key] = evaluator(ctx, subset);
+          data[key] = evaluator(subset, params);
         }
         else {
-          data[key] = groupEvaluator(ctx, subset);
+          data[key] = groupEvaluator(subset, params);
         }
       }
       return data;
@@ -229,29 +229,29 @@ function createCompiler(env) {
     var filter = wrapEvaluator(stepDefinition[1]);
     return filterStep;
 
-    function filterStep(ctx, arr) {
+    function filterStep(data /* , params */) {
       var elem, i, idx, ilen, result
         , filtered = false;
 
       // Scan for the first excluded item, if any
-      for ( i = 0, ilen = arr.length; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( !filter(ctx, elem.aliases, elem.obj) ) {
+      for ( i = 0, ilen = data.length; i < ilen; i++ ) {
+        elem = data[i];
+        if ( !filter(elem.obj, elem.params) ) {
           filtered = true;
-          result = slice.call(arr, 0, i);
+          result = slice.call(data, 0, i);
           break;
         }
       }
 
       if ( !filtered ) {
         // The array wasn't filtered, so we can just return it
-        return arr;
+        return data;
       }
 
       // Continue generating the filtered result
       for ( idx = i, i++; i < ilen; i++ ) {
-        elem = arr[i];
-        if ( filter(ctx, elem.aliases, elem.obj) ) {
+        elem = data[i];
+        if ( filter(elem.obj, elem.params) ) {
           result[idx++] = elem;
         }
       }
@@ -271,8 +271,8 @@ function createCompiler(env) {
     }
     return createSelectIterator(selectStep);
 
-    function selectStep(ctx, aliases, obj) {
-      return [select(ctx, aliases, obj)];
+    function selectStep(obj, params) {
+      return [select(obj, params)];
     }
   }
 
@@ -281,8 +281,8 @@ function createCompiler(env) {
     
     return createSelectIterator(expandStep);
 
-    function expandStep(ctx, aliases, obj) {
-      var result = expand(ctx, aliases, obj);
+    function expandStep(obj, params) {
+      var result = expand(obj, params);
       if ( Array.isArray(result) ) {
         return result;
       }
@@ -297,24 +297,24 @@ function createCompiler(env) {
     var extend = createMergeEvaluator(stepDefinition);
     return createSelectIterator(extendStep);
 
-    function extendStep(ctx, aliases, obj) {
-      return [extend(ctx, aliases, obj)];
+    function extendStep(obj, params) {
+      return [extend(obj, params)];
     }
   }
 
   function createSelectIterator(evaluator) {
     return selectIterator;
 
-    function selectIterator(ctx, arr) {
+    function selectIterator(data /* , params */) {
       var result = [];
 
-      for ( var i = 0, idx = 0, ilen = arr.length; i < ilen; i++ ) {
-        var elem = arr[i]
-          , aliases = elem.aliases
-          , selectResult = evaluator(ctx, aliases, elem.obj);
+      for ( var i = 0, idx = 0, ilen = data.length; i < ilen; i++ ) {
+        var elem = data[i]
+          , elemParams = elem.params
+          , selectResult = evaluator(elem.obj, elemParams);
 
         for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
-          result[idx++] = { obj: selectResult[j], aliases: aliases };
+          result[idx++] = { obj: selectResult[j], params: elemParams };
         }
       }
       return result;
@@ -333,20 +333,20 @@ function createCompiler(env) {
     }
     return sortStep;
 
-    function sortStep(ctx, arr) {
-      arr.sort(sortFunction);
-      return arr;
+    function sortStep(data /* , params */) {
+      data.sort(sortFunction);
+      return data;
 
       function sortFunction(item1, item2) {
-        var aliases1 = item1.aliases
-          , aliases2 = item2.aliases
-          , obj1 = item1.obj
-          , obj2 = item2.obj;
+        var obj1 = item1.obj
+          , obj2 = item2.obj
+          , params1 = item1.params
+          , params2 = item2.params
 
         for ( var i = 0; i < olen; i++ ) {
           var evaluator = evaluators[i]
-            , val1 = evaluator(ctx, aliases1, obj1)
-            , val2 = evaluator(ctx, aliases2, obj2)
+            , val1 = evaluator(obj1, params1)
+            , val2 = evaluator(obj2, params2)
             , result;
 
           if ( evaluator.ascending ) {
@@ -371,17 +371,17 @@ function createCompiler(env) {
 
     return groupStep;
 
-    function groupStep(ctx, arr) {
+    function groupStep(data /* , params */) {
       var result = {};
 
-      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+      for ( var i = 0, ilen = data.length; i < ilen; i++ ) {
         var target = result
-          , elem = arr[i]
+          , elem = data[i]
           , obj = elem.obj
-          , aliases = elem.aliases;
+          , elemParams = elem.params;
 
         for ( var j = 0; j < glen; j++ ) {
-          var key = getGroupKey(groups[j](ctx, aliases, obj));
+          var key = getGroupKey(groups[j](obj, elemParams));
           
           // leaf nodes are arrays, branches are objects
           target = target[key] || (target[key] = ( j === glen - 1 ? [] : {} ));
@@ -416,12 +416,12 @@ function createCompiler(env) {
     }
     return aggregateStep;
 
-    function aggregateStep(ctx, arr) {
-      var result = util.createObjectArray(arr)
-        , args = [ctx, result];
+    function aggregateStep(data, params) {
+      var result = util.createObjectArray(data)
+        , args = [result];
 
       for ( var i = 0; i < alen; i++ ) {
-        args[1] = result = extensions[i].apply(arr, args);
+        args[0] = result = extensions[i].apply(data, args);
       }
       
       if ( !Array.isArray(result) ) {
@@ -431,7 +431,7 @@ function createCompiler(env) {
         result = [result];
       }
       
-      return util.createShadowedArray(result);
+      return util.createShadowedArray(result, params);
     }
   }
 
@@ -456,12 +456,12 @@ function createCompiler(env) {
 
     return objEvaluator;
 
-    function objEvaluator(ctx, aliases, obj) {
+    function objEvaluator(obj, params) {
       var result = {};
 
       for ( var i = klen; i--; ) {
         var key = keys[i];
-        result[key] = template[key](ctx, aliases, obj);
+        result[key] = template[key](obj, params);
       }
       return result;
     }
@@ -473,10 +473,10 @@ function createCompiler(env) {
 
     return arrEvaluator;
 
-    function arrEvaluator(ctx, aliases, obj) {
+    function arrEvaluator(obj, params) {
       var result = [];
       for ( var i = tlen; i--; ) {
-        result[i] = template[i](ctx, aliases, obj);
+        result[i] = template[i](obj, params);
       }
       return result;
     }
@@ -489,12 +489,12 @@ function createCompiler(env) {
 
     return funcEvaluator;
 
-    function funcEvaluator(ctx, aliases, obj) {
+    function funcEvaluator(obj, params) {
       var funcArgs = [];
       for ( var i = tlen; i--; ) {
-        funcArgs[i] = template[i](ctx, aliases, obj);
+        funcArgs[i] = template[i](obj, params);
       }
-      return func.apply(obj, [ctx].concat(funcArgs));
+      return func.apply(obj, funcArgs);
     }
   }
 
@@ -504,11 +504,11 @@ function createCompiler(env) {
 
     return mergeEvaluator;
 
-    function mergeEvaluator(ctx, aliases, obj) {
+    function mergeEvaluator(obj, params) {
       var result = {}; // We don't mutate the first item
 
       for ( var i = 0; i < tlen; i++ ) {
-        var elem = template[i](ctx, aliases, obj)
+        var elem = template[i](obj, params)
           , keys = Object.keys(elem);
 
         for ( var j = 0, jlen = keys.length; j < jlen; j++ ) {
@@ -525,8 +525,8 @@ function createCompiler(env) {
     var $1 = createEvaluator(node[1]);
     return typeof $1 === 'function' ? notEvaluator : !$1;
 
-    function notEvaluator(ctx, aliases, obj) {
-      return !$1(ctx, aliases, obj);
+    function notEvaluator(obj, params) {
+      return !$1(obj, params);
     }
   }
 
@@ -534,8 +534,8 @@ function createCompiler(env) {
     var $1 = createEvaluator(node[1]);
     return typeof $1 === 'function' ? negEvaluator : -$1;
 
-    function negEvaluator(ctx, aliases, obj) {
-      return -$1(ctx, aliases, obj);
+    function negEvaluator(obj, params) {
+      return -$1(obj, params);
     }
   }
 
@@ -547,12 +547,12 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? andEvaluator : andEvaluator();
 
-    function andEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
+    function andEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1;
       if ( !lval ) {
         return lval;
       }
-      return $2_func ? $2(ctx, aliases, obj) : $2;
+      return $2_func ? $2(obj, params) : $2;
     }
   }
 
@@ -564,12 +564,12 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? orEvaluator : orEvaluator();
 
-    function orEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
+    function orEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1;
       if ( lval ) {
         return lval;
       }
-      return $2_func ? $2(ctx, aliases, obj) : $2;
+      return $2_func ? $2(obj, params) : $2;
     }
   }
 
@@ -581,9 +581,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? addEvaluator : addEvaluator();
 
-    function addEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function addEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval + rval;
     }
   }
@@ -596,9 +596,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? subEvaluator : subEvaluator();
 
-    function subEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function subEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval - rval;
     }
   }
@@ -611,9 +611,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? mulEvaluator : mulEvaluator();
 
-    function mulEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function mulEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval * rval;
     }
   }
@@ -626,9 +626,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? divEvaluator : divEvaluator();
 
-    function divEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function divEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval / rval;
     }
   }
@@ -641,9 +641,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? modEvaluator : modEvaluator();
 
-    function modEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function modEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval % rval;
     }
   }
@@ -656,9 +656,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? eqEvaluator : eqEvaluator();
 
-    function eqEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function eqEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval == rval;
     }
   }
@@ -671,9 +671,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? neqEvaluator : neqEvaluator();
 
-    function neqEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function neqEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval != rval;
     }
   }
@@ -686,9 +686,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? gtEvaluator : gtEvaluator();
 
-    function gtEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function gtEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval > rval;
     }
   }
@@ -701,9 +701,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? gteEvaluator : gteEvaluator();
 
-    function gteEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function gteEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval >= rval;
     }
   }
@@ -716,9 +716,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? ltEvaluator : ltEvaluator();
 
-    function ltEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function ltEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval < rval;
     }
   }
@@ -731,9 +731,9 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? lteEvaluator : lteEvaluator();
 
-    function lteEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function lteEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2;
       return lval <= rval;
     }
   }
@@ -746,17 +746,17 @@ function createCompiler(env) {
 
     return $1_func || $2_func ? inEvaluator : inEvaluator();
 
-    function inEvaluator(ctx, aliases, obj) {
-      var rval = $2_func ? $2(ctx, aliases, obj) : $2;
+    function inEvaluator(obj, params) {
+      var rval = $2_func ? $2(obj, params) : $2;
       if ( Array.isArray(rval) ) {
-        var item = $1_func ? $1(ctx, aliases, obj) : $1;
+        var item = $1_func ? $1(obj, params) : $1;
         return rval.indexOf(item) !== -1;
       }
       else if ( typeof rval === 'object' ) {
-        return ( $1_func ? $1(ctx, aliases, obj) : $1 ) in rval;
+        return ( $1_func ? $1(obj, params) : $1 ) in rval;
       }
       else if ( rval !== null && rval !== undefined ) {
-        return ( $1_func ? $1(ctx, aliases, obj) : $1 ) == rval;
+        return ( $1_func ? $1(obj, params) : $1 ) == rval;
       }
       return false;
     }
@@ -771,9 +771,9 @@ function createCompiler(env) {
     var regexCache = {};
     return $1_func || $2_func ? reEvaluator : reEvaluator();
 
-    function reEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1
-        , rval = $2_func ? $2(ctx, aliases, obj) : $2
+    function reEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1
+        , rval = $2_func ? $2(obj, params) : $2
         , re, key;
 
       if ( typeof lval !== 'string' && !Array.isArray(lval) ) {
@@ -800,9 +800,9 @@ function createCompiler(env) {
 
     return asEvaluator;
 
-    function asEvaluator(ctx, aliases, obj) {
-      var lval = $1_func ? $1(ctx, aliases, obj) : $1;
-      aliases[$2] = lval;
+    function asEvaluator(obj, params) {
+      var lval = $1_func ? $1(obj, params) : $1;
+      params[$2] = lval;
       return lval;
     }
   }
@@ -817,12 +817,12 @@ function createCompiler(env) {
     
     return $1_func || $2_func || $3_func ? ternEvaluator : ternEvaluator();
 
-    function ternEvaluator(ctx, aliases, obj) {
-      var cval = $1_func ? $1(ctx, aliases, obj) : $1;
+    function ternEvaluator(obj, params) {
+      var cval = $1_func ? $1(obj, params) : $1;
       if ( cval ) {
-        return $2_func ? $2(ctx, aliases, obj) : $2;
+        return $2_func ? $2(obj, params) : $2;
       }
-      return $3_func ? $3(ctx, aliases, obj) : $3;
+      return $3_func ? $3(obj, params) : $3;
     }
   }
 
@@ -832,14 +832,14 @@ function createCompiler(env) {
 
     return pathEvaluator;
 
-    function pathEvaluator(ctx, aliases, obj) {
-      var value = rootEvaluator(ctx, aliases, obj);
+    function pathEvaluator(obj, params) {
+      var value = rootEvaluator(obj, params);
       for ( var i = 0; i < plen; i++ ) {
         if ( value === null || value === undefined ) {
           return value;
         }
 
-        var key = path[i](ctx, aliases, obj);
+        var key = path[i](obj, params);
         value = value[key];
       }
       return value;
@@ -852,8 +852,8 @@ function createCompiler(env) {
 
     return createPathEvaluator(argPathRootEvaluator, pathComponents);
 
-    function argPathRootEvaluator(ctx /* aliases, obj */) {
-      return ctx.params[index];
+    function argPathRootEvaluator(obj, params) {
+      return params[index];
     }
   }
 
@@ -863,8 +863,8 @@ function createCompiler(env) {
 
     return createPathEvaluator(symbolPathRootEvaluator, pathComponents);
 
-    function symbolPathRootEvaluator(ctx, aliases, obj) {
-      return aliases[symbol];
+    function symbolPathRootEvaluator(obj, params) {
+      return params[symbol];
     }
   }
 
@@ -873,7 +873,7 @@ function createCompiler(env) {
 
     return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
-    function localPathRootEvaluator(ctx, aliases, obj) {
+    function localPathRootEvaluator(obj, params) {
       return obj;
     }
   }

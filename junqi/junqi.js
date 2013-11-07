@@ -14,8 +14,9 @@ var CURRENT_VERSION = "0.0.10"
 
 var slice = Array.prototype.slice;
 
-var funcRegex = /^function[^\{]*\{\s*(\/\*\s*([\s\S]*)\*\/)?/m
-  , commentPrefixRegex = /^([\s*]+)?([^\s*].*)$/;
+var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
+  , argNameSplitRegex = /\s*,\s*/m
+  , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/m;
 
 function createJunqiEnvironment(languages) {
   var grammarFunctions = {}
@@ -70,27 +71,42 @@ function createJunqiEnvironment(languages) {
       processed.query = args[i++];
     }
     else if ( typeof args[i] === 'function' ) {
-      processed.query = parseArgumentsFunction(args[i++]);
+      processArgumentsFunction(args[i++], processed);
     }
 
-    processed.params = args.slice(i);
+    processed.defaultArgs = args.slice(i);
     return processed;
   }
 
-  function parseArgumentsFunction(func) {
-    var match = funcRegex.exec(func.toString())
-      , comments = match[2].split('\n')
+  function processArgumentsFunction(func, processed) {
+    var match = funcRegex.exec(func.toString());
+
+    if ( match[1] && match[1].length ) {
+      processed.functionName = match[1];
+    }
+    
+    if ( match[2] && match[2].length ) {
+      processed.argNames = match[2].split(argNameSplitRegex);
+    }
+
+    if ( !match[3] || !match[3].length ) {
+      return;
+    }
+    
+    var comments = match[4].split('\n')
       , code = [];
 
     for ( var i = 0, len = comments.length; i < len; i++ ) {
-      var match = commentPrefixRegex.exec(comments[i]);
-      if ( !match ) { 
+      match = commentPrefixRegex.exec(comments[i]);
+      if ( !match ) {
+        // TODO: This should really never happen, maybe we throw an Error?
         continue;
       }
+      
       code.push(match[2]);
     }
 
-    return code.join('\n');
+    processed.query = code.join('\n');
   }
 
 
@@ -102,14 +118,15 @@ function createJunqiEnvironment(languages) {
       var processed = processArguments(util.makeArray(arguments))
         , data = processed.data
         , query = processed.query
-        , params = processed.params || [];
+        , defaultArgs = processed.defaultArgs || []
+        , argNames = processed.argNames || [];
 
       if ( !query ) {
         throw new Error("A query string must be specified");
       }
 
       var parseTree = parse(language, query)
-        , compiled = compile(parseTree, params);
+        , compiled = compile(parseTree, argNames, defaultArgs);
 
       return data ? compiled(data) : compiled;
     }
@@ -119,7 +136,7 @@ function createJunqiEnvironment(languages) {
     return parser.parse(language, query);
   }
 
-  function compile(parseTree, defaultParams) {
+  function compile(parseTree, argNames, defaultArgs) {
     var evaluator = compiler.compile(parseTree);
     return compiledQuery;
 
@@ -128,11 +145,19 @@ function createJunqiEnvironment(languages) {
         throw new Error("First parameter must be an Array");
       }
 
-      var params = util.mergeArrays(defaultParams, slice.call(arguments, 1))
-        , ctx = { source: data, params: params }
-        , aliases = {};
-
-      return evaluator(ctx, aliases, data);
+      var args = util.mergeArrays(defaultArgs, slice.call(arguments, 1))
+        , alen = argNames.length
+        , params = args.length ? {} : null;
+      
+      for ( var i = 0, ilen = args.length; i < ilen; i++ ) {
+        var arg = args[i];
+        params[i] = arg;
+        if ( i < alen ) {
+          params[argNames[i]] = arg
+        }
+      }
+      
+      return evaluator(data, params);
     }
   }
 
@@ -146,7 +171,7 @@ function createJunqiEnvironment(languages) {
     else {
       var keys = Object.keys(extensions);
       for ( i = keys.length; i--; ) {
-        var key = extensions[i];
+        var key = keys[i];
         registerExtension(key, extensions[key]);
       }
     }

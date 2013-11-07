@@ -1,5 +1,30 @@
 # Change History
 
+## 0.0.11 - More Compilation Convenience
+* Having to compile a query like this:
+
+```javascript
+var query = objeq(function() {/*
+  WHERE lastName == %1
+    AND firstName == %2
+  SELECT {
+    fullName: firstName + ' ' + lastName
+  }
+*/});
+```
+
+Is confusing.  What is all this %1 and %2 stuff about?  So we'll just allow this as well:
+
+```javascript
+var query = objeq(function(lastName, firstName) {/*
+  WHERE lastName == %lastName
+    AND firstName == %firstName
+  SELECT {
+    fullName: firstName + ' ' + lastName
+  }
+*/});
+```
+
 ## 0.0.10 - Query Compilation Convenience
 * Having to compile a query like this:
 
