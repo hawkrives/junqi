@@ -214,7 +214,7 @@ In theory, an Aggregator yields a single Item Result Set based on the Items in t
 As an example, this will register an Extension called 'avg' for calculating average values:
 
 ```javascript
-junqi.registerExtension('avg', function (ctx, value) {
+junqi.registerExtension('avg', function (value) {
   if ( Array.isArray(value) ) {
     if ( value.length === 0 ) return 0;
     for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
