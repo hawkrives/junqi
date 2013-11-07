@@ -92,6 +92,6 @@ var res = objeq(data, "-> hello(firstName)");
 ## Three Simple Rules for Extension Writers
 1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
 2. Inside of your Extension, the `this` variable will differ depending on context:
-  * If used in the Predicate or Selector, it will refer to the current Item being processed
   * If used as an Aggregator, it will refer to the Intermediate Result (an Array) that was passed into the Aggregator chain
+  * If used anywhere else, it will refer to the current Item being processed
 3. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on
