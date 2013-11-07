@@ -16,9 +16,18 @@ var slice = Array.prototype.slice;
 
 var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
   , argNameSplitRegex = /\s*,\s*/m
-  , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/m;
+  , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/;
 
 function createJunqiEnvironment(languages, autoRegister) {
+  if ( typeof languages === 'boolean' ) {
+    autoRegister = languages;
+    languages = undefined;
+  }
+  
+  if ( typeof languages === 'string' ) {
+    languages = [languages];
+  }
+  
   var grammarFunctions = {}
     , extensions = {};
 
