@@ -110,8 +110,8 @@ function createJunqiEnvironment(languages, autoRegister) {
     for ( var i = 0, len = comments.length; i < len; i++ ) {
       match = commentPrefixRegex.exec(comments[i]);
       if ( !match ) {
-        // TODO: This should really never happen, maybe we throw an Error?
-        continue;
+        // This should never happen unless somebody broke something
+        throw new Error("Regular Expression commentPrefixRegex is broken");
       }
       
       code.push(match[2]);
@@ -133,7 +133,7 @@ function createJunqiEnvironment(languages, autoRegister) {
         , argNames = processed.argNames || [];
 
       if ( !query ) {
-        throw new Error("A query string must be specified");
+        throw new Error("A query must be specified");
       }
 
       var parseTree = parse(language, query)
