@@ -6,15 +6,6 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-/*
- * Objeq Grammar
- *
- * Original Authors
- *
- *   Thom Bradford (github/kode4food)
- *   Stefano Rago (github/sterago)
- */
-
 %lex
 
 %options case-insensitive
@@ -36,6 +27,7 @@ ws    [\s]
   yytext = yytext.substr(1,yyleng-2);
   return 'STRING';
 }
+
 "'"("\\"['bfvnrt/{esc}]|"\\u"[a-fA-F0-9]{4}|[^'{esc}])*"'" {
   yytext = yytext.substr(1,yyleng-2);
   return 'STRING';
@@ -113,8 +105,7 @@ ws    [\s]
 %left '?'
 %left OR
 %left AND
-%left EQ NEQ IN RE
-%left GT GTE LT LTE
+%left EQ NEQ GT GTE LT LTE IN RE
 %left '+' '-'
 %left '*' '/' '%'
 %left NOT NEG
@@ -132,7 +123,7 @@ query
 
 steps
   : leading_step            { $$ = yy.steps($1); }
-  | steps trailing_step     { $$ = yy.pushStep($1, $2); }
+  | steps trailing_step     { $$ = yy.stepsPush($1, $2); }
   ;
 
 leading_step
@@ -195,16 +186,16 @@ ternary
 
 func
   : IDENT '(' expr_list ')'     { $$ = yy.node('func', $1, $3); }
-  | IDENT '(' ')'               { $$ = yy.node('func', $1, []); }
+  | IDENT '(' ')'               { $$ = yy.node('func', $1, yy.list()); }
   ;
 
 path
-  : THIS                  { $$ = yy.localPath(null); }
-  | IDENT                 { $$ = yy.localPath(null, $1); }
+  : THIS                  { $$ = yy.localPath(); }
+  | IDENT                 { $$ = yy.localPath($1); }
   | PARAM                 { $$ = yy.paramPath($1); }
   | ARGREF                { $$ = yy.paramPath(Number($1) - 1); }
-  | path '.' IDENT        { $$ = yy.pushPath($1, $3); }
-  | path '[' expr ']'     { $$ = yy.pushPath($1, $3); }
+  | path '.' IDENT        { $$ = yy.pathPush($1, $3); }
+  | path '[' expr ']'     { $$ = yy.pathPush($1, $3); }
   ;
 
 literal
@@ -220,30 +211,37 @@ literal
 
 array
   : '[' expr_list ']'     { $$ = yy.node('arr', $2); }
-  | '[' ']'               { $$ = yy.node('arr', []); }
+  | '[' ']'               { $$ = yy.node('arr', yy.list()); }
   ;
 
 expr_list
-  : expr                   { $$ = [$1]; }
-  | expr_list ',' expr     { $$ = $1; $1.push($3); }
+  : expr                   { $$ = yy.list($1); }
+  | expr_list ',' expr     { $$ = yy.listPush($1, $3); }
   ;
 
 obj
   : '{' obj_items '}'     { $$ = yy.node('obj', $2); }
-  | '{' '}'               { $$ = yy.node('obj', {}); }
+  | '{' '}'               { $$ = yy.node('obj', yy.map()); }
   ;
 
 obj_items
-  : obj_item                   { $$ = {}; $$[$1[0]] = $1[1]; }
-  | obj_items ',' obj_item     { $$ = $1; $$[$3[0]] = $3[1]; }
+  : obj_item                   { $$ = yy.map($1); }
+  | obj_items ',' obj_item     { $$ = yy.mapPush($1, $3); }
   ;
 
-obj_non_id: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED;
+obj_key_literal
+  : NUMBER 
+  | STRING 
+  | TRUE 
+  | FALSE 
+  | NULL 
+  | UNDEFINED
+  ;
 
 obj_item
-  : obj_non_id ':' expr     { $$ = [$1, $3]; }
-  | IDENT ':' expr          { $$ = [$1, $3]; }
-  | IDENT                   { $$ = [$1, yy.localPath(null, $1)]; }
+  : obj_key_literal ':' expr    { $$ = yy.pair($1, $3); }
+  | IDENT ':' expr              { $$ = yy.pair($1, $3); }
+  | IDENT                       { $$ = yy.pair($1, yy.localPath($1)); }
   ;
 
 selector
@@ -257,14 +255,14 @@ sorter
   ;
 
 order_list
-  : order_spec                    { $$ = [$1]; }
-  | order_list ',' order_spec     { $$ = $1; $1.push($3); }
+  : order_spec                    { $$ = yy.list($1); }
+  | order_list ',' order_spec     { $$ = yy.listPush($1, $3); }
   ;
 
 order_spec
-  : expr          { $$ = { expr: $1, ascending: true }; }
-  | expr ASC      { $$ = { expr: $1, ascending: true }; }
-  | expr DESC     { $$ = { expr: $1 }; }
+  : expr          { $$ = yy.sortOrder($1, true); }
+  | expr ASC      { $$ = yy.sortOrder($1, true); }
+  | expr DESC     { $$ = yy.sortOrder($1, false); }
   ;
 
 grouper
@@ -276,6 +274,6 @@ aggregator
   ;
 
 aggr_list
-  : IDENT                   { $$ = [$1]; }
-  | aggr_list ',' IDENT     { $$ = $1; $1.push($3); }
+  : IDENT                   { $$ = yy.list($1); }
+  | aggr_list ',' IDENT     { $$ = yy.listPush($1, $3); }
   ;

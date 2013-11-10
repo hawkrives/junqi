@@ -28,13 +28,13 @@ function createShadowedArray(array, params) {
   if ( params ) {
     // Inheriting Parameters
     for ( i = array.length; i--; ) {
-      result[i] = { obj: array[i], params: Object.create(params) }
+      result[i] = { obj: array[i], params: Object.create(params) };
     }
   }
   else {
     for ( i = array.length; i--; ) {
-      result[i] = { obj: array[i], params: {} }
-    }    
+      result[i] = { obj: array[i], params: {} };
+    }
   }
   return result;
 }
@@ -50,7 +50,7 @@ function createObjectArray(array) {
 function freezeObjects() {
   for ( var i = arguments.length; i--; ) {
     Object.freeze(arguments[i]);
-  }  
+  }
 }
 
 // Exports

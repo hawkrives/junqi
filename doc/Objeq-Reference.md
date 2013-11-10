@@ -23,7 +23,7 @@ This is a Query that consists of three Query Steps.
 3) The third Step processes the Working Set and filters those Items by a country property, resulting in a Result Set whose country must match the String 'Germany'.
 
 ## Query Step
-A Query Step consists of one of four refinements.  The first is a Predicate that is used to filter your Source Set, the second is a Selector for drilling into the filtered results, the third is a Collator for ordering the results, and the fourth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
+A Query Step consists of one of five refinements.  The first is a Predicate that is used to filter your Source Set, the second is a Selector for drilling into the filtered results, the third is a Grouper to isolate the results for future sorting and aggregation, the fourth is a Collator for ordering the results, and the fifth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
 
 ```
 Query

@@ -11,10 +11,15 @@ var util = require('./util');
 
 var slice = Array.prototype.slice;
 
+// The nextGroupKey must be global since an Object may participate in
+// multiple junqi environments.
+
 var GROUP_KEY = '__junqi_group_key__'
   , nextGroupKey = 0;
 
 function createCompiler(env) {
+  "use strict";
+
   var getExtension = env.getExtension;
   
   var compiler = {
@@ -849,7 +854,7 @@ function createCompiler(env) {
 
     return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
-    function localPathRootEvaluator(obj /*, params */) {
+    function localPathRootEvaluator(obj /* , params */) {
       return obj;
     }
   }
@@ -863,7 +868,7 @@ function createCompiler(env) {
     function symbolPathRootEvaluator(obj, params) {
       return params[symbol];
     }
-  }  
+  }
 }
 
 // Exports

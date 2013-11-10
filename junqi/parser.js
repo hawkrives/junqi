@@ -10,6 +10,8 @@
 var util = require('./util');
 
 function createParser(env) {
+  "use strict";
+  
   var parserClasses = {}
     , parserPools = {};
 
@@ -32,11 +34,17 @@ function createParser(env) {
       parser.yy = {
         node: createNode,
         steps: createSteps,
-        pushStep: pushStep,
+        stepsPush: stepsPush,
         step: createStep,
         localPath: createLocalPath,
         paramPath: createParamPath,
-        pushPath: pushPath
+        pathPush: pathPush,
+        sortOrder: createSortOrder,
+        list: createList,
+        listPush: listPush,
+        map: createMap,
+        mapPush: mapPush,
+        pair: createPair
       };
     }
 
@@ -88,7 +96,7 @@ function createParser(env) {
     return result;
   }
   
-  function pushStep(steps, step) {
+  function stepsPush(steps, step) {
     steps[1].push(step);
     return steps;
   }
@@ -100,7 +108,7 @@ function createParser(env) {
   }
   
   function createLocalPath() {
-    var result = ['local', util.makeArray(arguments)];
+    var result = ['local', [null].concat(util.makeArray(arguments))];
     result.isNode = true;
     return result;
   }
@@ -110,10 +118,40 @@ function createParser(env) {
     result.isNode = true;
     return result;
   }
-  
-  function pushPath(path, component) {
+
+  function pathPush(path, component) {
     path[1].push(component);
     return path;
+  }
+
+  function createSortOrder(expr, ascending) {
+    return { expr: expr, ascending: ascending };
+  }
+
+  function createList() {
+    return util.makeArray(arguments);
+  }
+
+  function listPush(list, item) {
+    list.push(item);
+    return list;
+  }
+
+  function createMap() {
+    var map = {};
+    for ( var i = 0, ilen = arguments.length; i < ilen; i++ ) {
+      mapPush(map, arguments[i]);
+    }
+    return map;
+  }
+
+  function mapPush(map, pair) {
+    map[pair[0]] = pair[1];
+    return map;
+  }
+
+  function createPair(key, value) {
+    return [key, value];
   }
 }
 

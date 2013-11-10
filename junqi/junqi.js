@@ -19,6 +19,8 @@ var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
   , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/;
 
 function createJunqiEnvironment(languages, autoRegister) {
+  "use strict";
+  
   if ( typeof languages === 'boolean' ) {
     autoRegister = languages;
     languages = undefined;
