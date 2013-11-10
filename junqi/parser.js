@@ -15,37 +15,38 @@ function createParser(env) {
   var parserClasses = {}
     , parserPools = {};
 
+  var parserInterface = {
+    node: createNode,
+    steps: createSteps,
+    stepsPush: stepsPush,
+    step: createStep,
+    localPath: createLocalPath,
+    paramPath: createParamPath,
+    pathPush: pathPush,
+    sortOrder: createSortOrder,
+    list: createList,
+    listPush: listPush,
+    map: createMap,
+    mapPush: mapPush,
+    pair: createPair
+  };
+  
   var parser = {
     parse: parse
   };
-  
-  util.freezeObjects(parser);
+
+  util.freezeObjects(parser, parserInterface);  
   return parser;
 
   // Implementation ***********************************************************
-
+  
   function parse(language, queryString) {
     // Get a Parser from the pool, if possible
-    var parserPool = parserPools[language] = parserPools[language] || []
+    var parserPool = parserPools[language] || (parserPools[language] = [])
       , parser = parserPool.pop();
 
     if ( !parser ) {
       parser = createLanguageParser(language);
-      parser.yy = {
-        node: createNode,
-        steps: createSteps,
-        stepsPush: stepsPush,
-        step: createStep,
-        localPath: createLocalPath,
-        paramPath: createParamPath,
-        pathPush: pathPush,
-        sortOrder: createSortOrder,
-        list: createList,
-        listPush: listPush,
-        map: createMap,
-        mapPush: mapPush,
-        pair: createPair
-      };
     }
 
     // Parse the Query, include evaluators in the result
@@ -81,7 +82,9 @@ function createParser(env) {
     if ( !parserClass ) {
       parserClass = parserClasses[language] = loadLanguageParser(language);
     }
-    return new parserClass();
+    var parser = new parserClass();
+    parser.yy = parserInterface;
+    return parser;
   }
 
   function createNode() {
