@@ -1,6 +1,11 @@
 # To Do
 
-* [ ] Implement a JSONiq Subset
-* [ ] Various Optimizations
-* [ ] MongoDB Integration
-* [ ] Comprehensive Documentation
+## Version 0.1
+- [x] Implement a JSONiq Subset
+
+## Version 0.2
+- [ ] Various Optimizations
+- [ ] Comprehensive Documentation
+
+## Beyond
+- [ ] MongoDB Integration

@@ -1,5 +1,8 @@
 # Change History
 
+## 0.0.12 - Crude JSONiq Support
+* Basic JSONiq support has been implemented, but it's missing *a lot* of functionality, and maybe always will.
+
 ## 0.0.11 - More Compilation Convenience
 * Having to compile a query like this:
 

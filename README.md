@@ -1,7 +1,7 @@
 # junqi (JavaScript Querying for Node.js)
 
 ## Introduction
-junqi is a Node.js library that allows JavaScript data to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by JSONiq [jsoniq] support.
+junqi is a Node.js library that allows JavaScript data to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by [JSONiq](http://www.jsoniq.org/) support.
 
 ### What Does it Do?
 It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.
@@ -64,19 +64,17 @@ var res = query(data);
 ```
 
 ## More Information
-For more information about how to interact with the junqi library and its API, see the API Reference at doc/API-Reference.md
+For more information about how to interact with the junqi library and its API, see the [API Reference](doc/API-Reference.md)
 
-For more information about the objeq grammar itself, see the objeq Grammar Reference at doc/Objeq-Reference.md
+For more information about the objeq grammar itself, see the [objeq Grammar Reference](doc/Objeq-Reference.md)
 
 ## Credits and Acknowledgements
-This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
+This module defines both a Lexer and Grammar that use the [Jison Parser Generator](http://zaach.github.com/jison/)
 
-The objeq grammar was originally developed by Thomas Bradford and Stefano Rago for Agilo Software GmbH (http://www.agilosoftware.com/)
+The objeq grammar was originally developed by Thomas Bradford and Stefano Rago for [Agilo Software GmbH](http://www.agilosoftware.com/).  The objeq library can be found at [GitHub](http://github.com/agilosoftware/objeq)
 
 ## License (MIT License)
 Copyright (c) 2013 Thomas S. Bradford
-
-Portions Copyright (c) 2012 Agilo Software GmbH
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -98,5 +96,3 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-
-[jsoniq]:   http://www.jsoniq.org/

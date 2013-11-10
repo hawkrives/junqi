@@ -9,8 +9,8 @@
 // Imports
 var util = require('./util');
 
-var CURRENT_VERSION = "0.0.11"
-  , defaultLanguages = ['objeq'];
+var CURRENT_VERSION = "0.0.12"
+  , defaultLanguages = ['objeq', 'jsoniq'];
 
 var slice = Array.prototype.slice;
 
@@ -30,7 +30,7 @@ function createJunqiEnvironment(languages, autoRegister) {
     languages = [languages];
   }
   
-  var grammarFunctions = {}
+  var languageFunctions = {}
     , extensions = {};
 
   var env = {
@@ -46,7 +46,7 @@ function createJunqiEnvironment(languages, autoRegister) {
   junqi.registerExtension = registerExtension;
   junqi.registerExtensions = registerExtensions;
 
-  // Register the supported grammar functions
+  // Register the supported language functions
   var supportedLanguages = defaultLanguages;
   if ( Array.isArray(languages) ) {
     supportedLanguages = languages;
@@ -54,20 +54,20 @@ function createJunqiEnvironment(languages, autoRegister) {
 
   for ( var i = supportedLanguages.length; i--; ) {
     var language = supportedLanguages[i];
-    junqi[language] = registerGrammar(language);
+    junqi[language] = registerLanguage(language);
   }
 
-  util.freezeObjects(env, junqi, grammarFunctions);
+  util.freezeObjects(env, junqi, languageFunctions);
   return junqi;
 
   // Implementation ***********************************************************
 
   function junqi(language) {
-    var grammarFunction = grammarFunctions[language];
-    if ( !grammarFunction ) {
-      throw new Error("Grammar '" + language + "' not registered");
+    var languageFunction = languageFunctions[language];
+    if ( !languageFunction ) {
+      throw new Error("Language '" + language + "' not registered");
     }
-    grammarFunction.apply(null, slice.call(arguments, 1));
+    languageFunction.apply(null, slice.call(arguments, 1));
   }
 
   function processArguments(args) {
@@ -120,11 +120,11 @@ function createJunqiEnvironment(languages, autoRegister) {
     processed.query = code.join('\n');
   }
 
-  function registerGrammar(language) {
-    grammarFunctions[language] = grammarFunction;
-    return grammarFunction;
+  function registerLanguage(language) {
+    languageFunctions[language] = languageFunction;
+    return languageFunction;
 
-    function grammarFunction() {
+    function languageFunction() {
       var processed = processArguments(util.makeArray(arguments))
         , data = processed.data
         , query = processed.query

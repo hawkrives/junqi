@@ -6,6 +6,10 @@
  * @author Thom Bradford (github/kode4food)
  */
 
+/*
+ * objeq Grammar
+ */
+ 
 %lex
 
 %options case-insensitive

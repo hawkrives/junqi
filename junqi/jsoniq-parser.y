@@ -38,7 +38,6 @@ ws    [\s]
 
 {ws}+                        /* skip whitespace */
 "return"                     return 'RETURN';
-"as"                         return 'AS';
 "for"                        return 'FOR';
 "let"                        return 'LET';
 "count"                      return 'COUNT';
@@ -64,7 +63,6 @@ ws    [\s]
 "of"                         return 'OF';
 "try"                        return 'TRY';
 "catch"                      return 'CATCH';
-"typeswitch"                 return 'TYPESWITCH';
 "default"                    return 'DEFAULT';
 "or"                         return 'OR';
 "and"                        return 'AND';
@@ -116,7 +114,6 @@ exprSingle
   : flworExpr
   | quantifiedExpr
   | switchExpr
-  | typeSwitchExpr
   | ifExpr
   | tryCatchExpr
   | orExpr
@@ -151,27 +148,23 @@ flworTail
   ;
 
 forClause
-         ::= FOR VarRef (AS SequenceType)? (ALLOWING EMPTY)? (AT VarRef)? IN ExprSingle ("," VarRef (AS SequenceType)? (ALLOWING EMPTY)? (AT VarRef)? IN ExprSingle)*
+         ::= FOR VarRef (ALLOWING EMPTY)? (AT VarRef)? IN ExprSingle ("," VarRef (ALLOWING EMPTY)? (AT VarRef)? IN ExprSingle)*
 letClause
-         ::= LET VarRef (AS SequenceType)? ASSIGN ExprSingle (',' VarRef (AS SequenceType)? ASSIGN ExprSingle)*
+         ::= LET VarRef ASSIGN ExprSingle (',' VarRef ASSIGN ExprSingle)*
 countClause
          ::= COUNT VarRef
 whereClause
          ::= WHERE ExprSingle
 groupByClause
-         ::= GROUP BY VarRef ((AS SequenceType)? ASSIGN ExprSingle)? ('collation' URILiteral)? (',' VarRef ((AS SequenceType)? ASSIGN ExprSingle)? ('collation' URILiteral)?)*
+         ::= GROUP BY VarRef (ASSIGN ExprSingle)? (',' VarRef (ASSIGN ExprSingle)?)*
 orderByClause
-         ::= ((ORDER BY) | (STABLE ORDER BY)) ExprSingle (ASCENDING | DESCENDING)? ('empty' ('greatest' | 'least'))? ('collation' URILiteral)? (',' ExprSingle (ASCENDING | DESCENDING)? ('empty' ('greatest' | 'least'))? ('collation' URILiteral)?)*
+         ::= ((ORDER BY) | (STABLE ORDER BY)) ExprSingle (ASCENDING | DESCENDING)? ('empty' ('greatest' | 'least'))? (',' ExprSingle (ASCENDING | DESCENDING)? ('empty' ('greatest' | 'least'))?)*
 quantifiedExpr
-         ::= (SOME | EVERY) VarRef (AS SequenceType)? IN ExprSingle (',' VarRef (AS SequenceType)? IN ExprSingle)* SATISFIES ExprSingle
+         ::= (SOME | EVERY) VarRef IN ExprSingle (',' VarRef IN ExprSingle)* SATISFIES ExprSingle
 switchExpr
          ::= SWITCH '(' Expr ')' SwitchCaseClause+ DEFAULT RETURN ExprSingle
 switchCaseClause
          ::= (CASE ExprSingle)+ RETURN ExprSingle
-typeswitchExpr
-         ::= TYPESWITCH '(' Expr ')' CaseClause+ DEFAULT (VarRef)? RETURN ExprSingle
-caseClause
-         ::= CASE (VarRef AS)? SequenceType ('|' SequenceType)* RETURN ExprSingle
 ifExpr   ::= IF '(' Expr ')' 'then' ExprSingle 'else' ExprSingle
 tryCatchExpr
          ::= TRY '{' Expr '}' CATCH '*' '{' Expr '}'
@@ -187,14 +180,7 @@ rangeExpr
 additiveExpr
          ::= MultiplicativeExpr ( ('+' | '-') MultiplicativeExpr )*
 multiplicativeExpr
-         ::= InstanceofExpr ( ('*' | DIV | IDIV | MOD ) InstanceofExpr )*
-instanceofExpr
-         ::= TreatExpr ( 'instance' 'of' SequenceType )?
-treatExpr
-         ::= CastableExpr ( 'treat' AS SequenceType )?
-castableExpr
-         ::= CastExpr ( 'castable' AS AtomicType '?'? )?
-castExpr ::= UnaryExpr ( 'cast' AS AtomicType '?'? )?
+         ::= UnaryExpr ( ('*' | DIV | IDIV | MOD ) UnaryExpr )*
 unaryExpr
          ::= ('-' | '+')* SimpleMapExpr
 simpleMapExpr
@@ -219,45 +205,43 @@ primaryExpr
            | UnorderedExpr
            | ObjectConstructor
            | ArrayConstructor
+           
 literal  ::= NumericLiteral | StringLiteral | BooleanLiteral | NullLiteral
+
 numericLiteral
          ::= IntegerLiteral | DecimalLiteral | DoubleLiteral
+
 booleanLiteral
          ::= 'true' | 'false'
+
 nullLiteral
          ::= 'null'
+
 varRef   ::= '$' (NCName ':')? NCName
+
 parenthesizedExpr
          ::= '(' Expr? ')'
+
 contextItemExpr
          ::= '$$'
+
 orderedExpr
          ::= 'ordered' '{' Expr '}'
+
 unorderedExpr
          ::= 'unordered' '{' Expr '}'
+
 functionCall
          ::= (NCName ':')? NCName ArgumentList
+
 argument ::= exprSingle | '?'
+
 objectConstructor
          ::=  '{' ( PairConstructor (',' PairConstructor)* )? '}'
          | '{|' Expr '|}'
+
 pairConstructor
          ::=  ( ExprSingle | NCName ) ':' ExprSingle
+
 arrayConstructor
          ::=  '[' Expr? ']'
-sequenceType
-         ::= '(' ')'
-           | itemType ('?' | '*' | '+')?
-itemType
-         ::= 'item'
-           | JSONItemTest
-           | atomicType
-JSONItemTest
-         ::= 'object'
-           | 'array'
-           | 'json-item'
-atomicType
-         ::= 'atomic' | 'string' | 'integer' | 'decimal' | 'double' | 'boolean' | 'null'
-         | 'etc (other builtin atomic types)'
-URILiteral
-         ::= StringLiteral
