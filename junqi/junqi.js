@@ -158,10 +158,6 @@ function createJunqiEnvironment(languages, autoRegister) {
     return compiledQuery;
 
     function compiledQuery(data) {
-      if ( !Array.isArray(data) ) {
-        throw new Error("First parameter must be an Array");
-      }
-
       var args = util.mergeArrays(defaultArgs, slice.call(arguments, 1))
         , alen = argNames.length
         , params = args.length ? {} : null;
