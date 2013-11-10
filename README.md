@@ -1,7 +1,7 @@
 # junqi (JavaScript Querying for Node.js)
 
 ## Introduction
-junqi is a Node.js library that allows JavaScript data to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the objeq grammar will be supported, eventually followed by [JSONiq](http://www.jsoniq.org/) support.
+junqi is a Node.js library that allows JavaScript data to be queried more conveniently.  Its goal is to consolidate and expose multiple query grammars with a single backend.  Initially, the [objeq](doc/Objeq-Reference.md) grammar will be supported, eventually followed by [JSONiq](http://www.jsoniq.org/) support.
 
 ### What Does it Do?
 It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.

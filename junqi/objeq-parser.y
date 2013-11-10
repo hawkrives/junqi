@@ -47,6 +47,7 @@ ws    [\s]
   return 'PARAM';
 }
 
+"#"[^\n]*\n                  /* skip comments */
 {ws}+                        /* skip whitespace */
 "as"                         return 'AS';
 "undefined"                  return 'UNDEFINED';

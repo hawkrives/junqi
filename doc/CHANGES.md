@@ -2,8 +2,9 @@
 
 ## 0.0.12 - Crude JSONiq Support
 * Basic JSONiq support has been implemented, but it's missing *a lot* of functionality, and maybe always will.
+* Comments can now be included in an objeq query.  A Comment starts with a number sign (#) and continues to the end of the current line.
 
-## 0.0.11 - More Compilation Convenience
+# 0.0.11 - More Compilation Convenience
 * Having to compile a query like this:
 
 ```javascript
