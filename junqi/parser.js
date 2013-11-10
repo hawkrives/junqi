@@ -23,7 +23,8 @@ function createParser(env) {
     localPath: createLocalPath,
     paramPath: createParamPath,
     pathPush: pathPush,
-    sortOrder: createSortOrder,
+    ascending: createAscending,
+    descending: createDescending,
     list: createList,
     listPush: listPush,
     map: createMap,
@@ -35,7 +36,7 @@ function createParser(env) {
     parse: parse
   };
 
-  util.freezeObjects(parser, parserInterface);  
+  util.freezeObjects(parser, parserInterface);
   return parser;
 
   // Implementation ***********************************************************
@@ -78,11 +79,11 @@ function createParser(env) {
   }
 
   function createLanguageParser(language) {
-    var parserClass = parserClasses[language];
-    if ( !parserClass ) {
-      parserClass = parserClasses[language] = loadLanguageParser(language);
+    var ParserClass = parserClasses[language];
+    if ( !ParserClass ) {
+      ParserClass = parserClasses[language] = loadLanguageParser(language);
     }
-    var parser = new parserClass();
+    var parser = new ParserClass();
     parser.yy = parserInterface;
     return parser;
   }
@@ -127,8 +128,12 @@ function createParser(env) {
     return path;
   }
 
-  function createSortOrder(expr, ascending) {
-    return { expr: expr, ascending: ascending };
+  function createAscending(expr) {
+    return { expr: expr, ascending: true };
+  }
+
+  function createDescending(expr) {
+    return { expr: expr };
   }
 
   function createList() {

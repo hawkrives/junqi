@@ -265,9 +265,9 @@ order_list
   ;
 
 order_spec
-  : expr          { $$ = yy.sortOrder($1, true); }
-  | expr ASC      { $$ = yy.sortOrder($1, true); }
-  | expr DESC     { $$ = yy.sortOrder($1, false); }
+  : expr          { $$ = yy.ascending($1); }
+  | expr ASC      { $$ = yy.descending($1); }
+  | expr DESC     { $$ = yy.descending($1); }
   ;
 
 grouper
