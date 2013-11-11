@@ -21,32 +21,6 @@ function mergeArrays(arr1, arr2) {
   return result;
 }
 
-function createShadowedArray(array, params) {
-  var result = []
-    , i;
-  
-  if ( params ) {
-    // Inheriting Parameters
-    for ( i = array.length; i--; ) {
-      result[i] = { obj: array[i], params: Object.create(params) };
-    }
-  }
-  else {
-    for ( i = array.length; i--; ) {
-      result[i] = { obj: array[i], params: {} };
-    }
-  }
-  return result;
-}
-
-function createObjectArray(array) {
-  var result = [];
-  for ( var i = array.length; i--; ) {
-    result[i] = array[i].obj;
-  }
-  return result;
-}
-
 function freezeObjects() {
   for ( var i = arguments.length; i--; ) {
     Object.freeze(arguments[i]);
@@ -56,6 +30,4 @@ function freezeObjects() {
 // Exports
 exports.makeArray = makeArray;
 exports.mergeArrays = mergeArrays;
-exports.createShadowedArray = createShadowedArray;
-exports.createObjectArray = createObjectArray;
 exports.freezeObjects = freezeObjects;

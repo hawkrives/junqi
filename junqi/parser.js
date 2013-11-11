@@ -51,11 +51,12 @@ function createParser(env) {
     }
 
     // Parse the Query, include evaluators in the result
-    var steps = parser.parse(queryString);
+    var parseTree = parser.parse(queryString);
 
     // Push the Parser back onto the pool and return the result
     parserPool.push(parser);
-    return steps;
+    
+    return parseTree;
   }
 
   function loadLanguageParser(language) {
@@ -87,7 +88,9 @@ function createParser(env) {
     parser.yy = parserInterface;
     return parser;
   }
-
+  
+  // Parse Tree Node Creation *************************************************
+  
   function createNode() {
     var result = util.makeArray(arguments);
     result.isNode = true;
