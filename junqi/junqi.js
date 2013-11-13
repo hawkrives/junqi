@@ -12,7 +12,9 @@ var util = require('./util');
 var CURRENT_VERSION = "0.0.12"
   , defaultLanguages = ['objeq', 'jsoniq'];
 
-var slice = Array.prototype.slice;
+var slice = Array.prototype.slice
+  , isArray = Array.isArray
+  , objectKeys = Object.keys;
 
 var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
   , argNameSplitRegex = /\s*,\s*/m
@@ -48,7 +50,7 @@ function createJunqiEnvironment(languages, autoRegister) {
 
   // Register the supported language functions
   var supportedLanguages = defaultLanguages;
-  if ( Array.isArray(languages) ) {
+  if ( isArray(languages) ) {
     supportedLanguages = languages;
   }
 
@@ -74,7 +76,7 @@ function createJunqiEnvironment(languages, autoRegister) {
     var processed = {}
       , i = 0;
 
-    if ( Array.isArray(args[0]) ) {
+    if ( isArray(args[0]) ) {
       processed.data = args[i++];
     }
 
@@ -176,13 +178,13 @@ function createJunqiEnvironment(languages, autoRegister) {
 
   function registerExtensions(extensions) {
     var i;
-    if ( Array.isArray(extensions) ) {
+    if ( isArray(extensions) ) {
       for ( i = extensions.length; i--; ) {
         registerExtension(extensions[i]);
       }
     }
     else {
-      var keys = Object.keys(extensions);
+      var keys = objectKeys(extensions);
       for ( i = keys.length; i--; ) {
         var key = keys[i];
         registerExtension(key, extensions[key]);

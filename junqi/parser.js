@@ -85,7 +85,7 @@ function createParser(env) {
       ParserClass = parserClasses[language] = loadLanguageParser(language);
     }
     var parser = new ParserClass();
-    parser.yy = parserInterface;
+    parser.yy = util.extendObject({}, parserInterface);
     return parser;
   }
   
@@ -144,7 +144,7 @@ function createParser(env) {
   }
 
   function listPush(list, item) {
-    list.push(item);
+    list.push(item);  
     return list;
   }
 

@@ -215,8 +215,14 @@ literal
   ;
 
 array
-  : '[' expr_list ']'     { $$ = yy.node('arr', $2); }
-  | '[' ']'               { $$ = yy.node('arr', yy.list()); }
+  : '[' expr subquery ']'     { $$ = yy.node('subquery', $2, $3); }
+  | '[' expr_list ']'         { $$ = yy.node('arr', $2); }
+  | '[' ']'                   { $$ = yy.node('arr', yy.list()); }
+  ;
+
+subquery
+  : trailing_step                    { $$ = yy.steps($1); }
+  | trailing_steps trailing_step     { $$ = yy.stepsPush($1, $2); }
   ;
 
 expr_list

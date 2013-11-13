@@ -12,7 +12,7 @@ var util = require('./util');
 var slice = Array.prototype.slice
   , isArray = Array.isArray
   , defineProperties = Object.defineProperty
-  , createObject = Object.create
+  , extendContext = Object.create
   , objectKeys = Object.keys;
 
 // The nextGroupKey must be global since an Object may participate in
@@ -78,6 +78,8 @@ function createCompiler(env) {
         return createObjEvaluator(node);
       case 'arr':
         return createArrEvaluator(node);
+      case 'subquery':
+        return createSubqueryEvaluator(node);
       case 'func':
         return createFuncEvaluator(node);
       case 'merge':
@@ -312,12 +314,10 @@ function createCompiler(env) {
           , elemCtx = elem.ctx
           , selectResult = evaluator(elem.obj, elemCtx);
 
-        // TODO: If we know a context mutator hasn't been used, then we can
-        //       just pass the original elemCtx forward
         for ( var j = 0, jlen = selectResult.length; j < jlen; j++ ) {
           result[idx++] = {
             obj: selectResult[j],
-            ctx: elemCtx ? createObject(elemCtx) : {}
+            ctx: extendContext(elemCtx)
           };
         }
       }
@@ -483,6 +483,18 @@ function createCompiler(env) {
         result[i] = template[i](obj, ctx);
       }
       return result;
+    }
+  }
+
+  function createSubqueryEvaluator(node) {
+    var input = wrapEvaluator(node[1])
+      , steps = createEvaluator(node[2]);
+
+    return subqueryEvaluator;
+
+    function subqueryEvaluator(obj, ctx) {
+      var data = input(obj, ctx);
+      return steps(data, ctx);
     }
   }
 
@@ -880,7 +892,7 @@ function createCompiler(env) {
     if ( ctx ) {
       // Inheriting Parameters
       for ( i = array.length; i--; ) {
-        result[i] = { obj: array[i], ctx: createObject(ctx) };
+        result[i] = { obj: array[i], ctx: extendContext(ctx) };
       }
     }
     else {

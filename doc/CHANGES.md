@@ -1,8 +1,21 @@
 # Change History
 
-## 0.0.12 - Crude JSONiq Support
-* Basic JSONiq support has been implemented, but it's missing *a lot* of functionality, and maybe always will.
+## 0.0.12 - Objeq Subquery Support
 * Comments can now be included in an objeq query.  A Comment starts with a number sign (#) and continues to the end of the current line.
+* Queries can now be nested using a variant of the Array Literal syntax.  For example:
+
+```
+lastName == 'Bradford'
+select {
+  firstName,
+  lastName,       # will only include people whose last name is 'Bradford'
+  addresses: [    # will only include active addresses in Germany
+    addresses where active and country == 'Germany'
+  ]
+}
+```
+
+The expression (addresses) will be evaluated and fed into the trailing step (WHERE active and country == 'Germany').  The full grammar for trailing steps is supported for subqueries.  See the [objeq Grammar Reference](Objeq-Reference.md) for more information on trailing steps.
 
 # 0.0.11 - More Compilation Convenience
 * Having to compile a query like this:

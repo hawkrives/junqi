@@ -6,9 +6,9 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-// Use the prototypes rather than trusting instances
 var slice = Array.prototype.slice
-  , splice = Array.prototype.splice;
+  , splice = Array.prototype.splice
+  , objectKeys = Object.keys;
 
 function makeArray(arr) {
   return slice.call(arr, 0);
@@ -27,7 +27,20 @@ function freezeObjects() {
   }
 }
 
+function extendObject(target) {
+  for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
+    var source = arguments[i]
+      , keys = objectKeys(source);
+    for ( var j = keys.length; j--; ) {
+      var key = keys[j];
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
 // Exports
 exports.makeArray = makeArray;
 exports.mergeArrays = mergeArrays;
 exports.freezeObjects = freezeObjects;
+exports.extendObject = extendObject;
