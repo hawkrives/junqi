@@ -24,14 +24,16 @@ exports.symbols = nodeunit.testCase({
   },
 
   "Forward Symbol Passing Works": function (test) {
-    var query = "this as %parent -> age " +
-                "then this > 40 " +
-                "select { " +
-                "  fullName: %parent.firstName + ' ' + %parent.lastName, " +
-                "  age " +
-                "}";
+    var query = objeq(function() {/*
+      this as %parent -> age
+      then this > 40
+      select {
+        fullName: %parent.firstName + ' ' + %parent.lastName,
+        age
+      }
+    */});
     
-    test.equal(objeq(this.data, query)[0].fullName, "Fred Wilkinson",
+    test.equal(query(this.data)[0].fullName, "Fred Wilkinson",
       "Passed Parent is correct");
 
     test.done();

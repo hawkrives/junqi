@@ -1,9 +1,6 @@
 var nodeunit = require('nodeunit')
   , objeq = require('../junqi').objeq;
 
-// Load the Standard Extensions
-require('../extensions');
-
 exports.compiler = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [

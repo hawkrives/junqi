@@ -493,8 +493,10 @@ function createCompiler(env) {
     return subqueryEvaluator;
 
     function subqueryEvaluator(obj, ctx) {
-      var data = input(obj, ctx);
-      return steps(data, ctx);
+      var data = input(obj, ctx)
+        , subqueryCtx = extendContext(ctx);
+      subqueryCtx.data = data;
+      return steps(data, subqueryCtx);
     }
   }
 

@@ -161,8 +161,11 @@ function createJunqiEnvironment(languages, autoRegister) {
 
     function compiledQuery(data) {
       var args = util.mergeArrays(defaultArgs, slice.call(arguments, 1))
-        , alen = argNames.length
-        , params = args.length ? {} : null;
+        , alen = argNames.length;
+      
+      var params = {
+        data: data    
+      };
       
       for ( var i = 0, ilen = args.length; i < ilen; i++ ) {
         var arg = args[i];
