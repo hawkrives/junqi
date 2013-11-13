@@ -17,7 +17,7 @@ select {
 
 The expression (addresses) will be evaluated and fed into the trailing step (WHERE active and country == 'Germany').  The full grammar for trailing steps is supported for subqueries.  See the [objeq Grammar Reference](Objeq-Reference.md) for more information on trailing steps.
 
-# 0.0.11 - More Compilation Convenience
+## 0.0.11 - More Compilation Convenience
 * Having to compile a query like this:
 
 ```javascript

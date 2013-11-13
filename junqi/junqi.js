@@ -164,7 +164,7 @@ function createJunqiEnvironment(languages, autoRegister) {
         , alen = argNames.length;
       
       var params = {
-        data: data    
+        data: data
       };
       
       for ( var i = 0, ilen = args.length; i < ilen; i++ ) {
