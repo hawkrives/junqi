@@ -2,10 +2,13 @@
   "name": "junqi",
   "description": "JavaScript Object Querying",
   "author": "Thomas S. Bradford",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "license": "MIT",
   "homepage": "http://www.junqi.io/",
   "main": "index.js",
+  "bin": {
+    "junqi": "junqi/cli.js"
+  },
   "keywords": ["javascript", "json", "query", "language", "server", "nodejs"],
   "contributors": [
     { "name": "Thom Bradford", "email": "thom@kode4food.it" }
