@@ -12,6 +12,9 @@
 var fs = require('fs')
   , junqi = require('./junqi');
 
+// Standard Extensions
+require('../extensions');
+
 commandLine();
 
 // Command Line Processing ****************************************************
@@ -20,10 +23,10 @@ function commandLine() {
   var args = parseArguments()
     , inData, query, outData;
 
+  // Check Language Selection
   var lang = args.lang || 'objeq'
     , compiler = junqi[lang.toLowerCase()];
 
-  // Check Language Selection
   if ( !compiler || compiler.name !== 'languageFunction' ) {
     errorOut("Invalid language specified '" + lang + "'");
   }
@@ -57,7 +60,7 @@ function commandLine() {
     
     process.stdin.on('end', function() {
       inData = JSON.parse(Buffer.concat(buffers));
-      readQuery();      
+      readQuery();
     });
   }
 
@@ -125,7 +128,7 @@ function parseArguments() {
 function errorOut(message) {
   displayVersion();
   displayUsage();
-  console.error("Error!")
+  console.error("Error!");
   console.error("");
   console.error("  " + message);
   console.error("");
