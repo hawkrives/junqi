@@ -9,6 +9,8 @@
 // Imports
 var junqi = require('../junqi');
 
+var isArray = Array.isArray;
+
 var DefaultExtensions = {
 
   // Extensions from Math Module **********************************************
@@ -32,7 +34,7 @@ var DefaultExtensions = {
   // Other Math Extensions ****************************************************
   
   avg: function avg(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return typeof value === 'number' ? value : NaN;
     }
     if ( value.length === 0 ) return 0;
@@ -41,18 +43,18 @@ var DefaultExtensions = {
   },
 
   count: function count(value) {
-    return Array.isArray(value) ? value.length : 0;
+    return isArray(value) ? value.length : 0;
   },
 
   max: function max(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return typeof value === 'number' ? value : NaN;
     }
     return Math.max.apply(Math, value);
   },
 
   median: function median(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return typeof value === 'number' ? value : NaN;
     }
     if ( value.length === 0 ) return 0;
@@ -65,7 +67,7 @@ var DefaultExtensions = {
   },
 
   min: function min(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return typeof value === 'number' ? value : NaN;
     }
     return Math.min.apply(Math, value);
@@ -74,7 +76,7 @@ var DefaultExtensions = {
   number: Number,
 
   sum: function sum(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return typeof value === 'number' ? value : NaN;
     }
     for ( var i = 0, res = 0, l = value.length; i < l; res += value[i++] );
@@ -84,18 +86,25 @@ var DefaultExtensions = {
   // Array Extensions *********************************************************
 
   first: function first(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return value;
     }
     return value[0];
   },
 
   last: function last(value) {
-    if ( !Array.isArray(value) ) {
+    if ( !isArray(value) ) {
       return value;
     }
     if ( value.length ) return value[value.length - 1];
     return null;
+  },
+
+  empty: function empty(value) {
+    if ( !isArray(value) ) {
+      return value == null;
+    }
+    return value.length > 0;
   },
 
   // String Extensions ********************************************************
