@@ -1,7 +1,7 @@
 # Change History
 
 ## 0.0.13 - Command Line Interface
-* A basic command line interface has been added.  It's called 'junqi' and will be installed by npm into an appropriate 'bin' directory.
+* A very basic command line interface has been added.  It's called 'junqi' and will be installed by npm into an appropriate 'bin' directory.  Execute the command with no arguments for usage information.
 
 ## 0.0.12 - Objeq Subquery Support
 * Comments can now be included in an objeq query.  A Comment starts with a number sign (#) and continues to the end of the current line.
