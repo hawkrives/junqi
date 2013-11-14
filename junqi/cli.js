@@ -20,10 +20,10 @@ function commandLine() {
   var args = parseArguments()
     , inData, query, outData;
 
+  // Check Language Selection
   var lang = args.lang || 'objeq'
     , compiler = junqi[lang.toLowerCase()];
 
-  // Check Language Selection
   if ( !compiler || compiler.name !== 'languageFunction' ) {
     errorOut("Invalid language specified '" + lang + "'");
   }
