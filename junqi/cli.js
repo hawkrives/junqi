@@ -84,7 +84,7 @@ function commandLine() {
 
   function writeOutput() {
     if ( args.out ) {
-      fs.writeFileSync(outData);
+      fs.writeFileSync(args.out, outData);
     }
     else {
       var buf = new Buffer(outData);
