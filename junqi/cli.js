@@ -54,6 +54,11 @@ function commandLine() {
     }
     
     // Otherwise, we're reading from stdin
+    if ( process.stdin.isTTY ) {
+      errorOut("Only piped input is accepted from stdin");
+      return;
+    }
+
     var buffers = [];
     process.stdin.resume();
     process.stdin.on('data', function(data) {
@@ -128,7 +133,6 @@ function commandLine() {
   }
 
   function errorOut(message) {
-    displayVersion();
     displayUsage();
     console.error("Error!");
     console.error("");
@@ -143,6 +147,7 @@ function commandLine() {
   }
 
   function displayUsage() {
+    displayVersion();
     console.info("Usage:");
     console.info("");
     console.info("  junqi (options) <query string>");
@@ -151,10 +156,10 @@ function commandLine() {
     console.info("");
     console.info("  Options:");
     console.info("");
-    console.info("    -lang <language>  - Currently 'objeq' or 'jsoniq'");
-    console.info("    -in <filename>    - Input file, otherwise use stdin");
-    console.info("    -out <filename>   - Output file, otherwise use stdout");
-    console.info("    -query <filename> - Query file, otherwise command line");
+    console.info("  -lang <language>  - Currently 'objeq' or 'jsoniq'");
+    console.info("  -in <filename>    - Input file, otherwise pipe from stdin");
+    console.info("  -out <filename>   - Output file, otherwise use stdout");
+    console.info("  -query <filename> - Query file, otherwise command line");
     console.info("");
     console.info("  Query String (if -query not provided):");
     console.info("");
