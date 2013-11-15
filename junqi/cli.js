@@ -22,38 +22,47 @@ commandLine();
 function commandLine() {
   "use strict";
 
-  var args = parseArguments()
-    , inData, query, outData;
+  var compiler, input, query, output
+    , args = parseArguments();
 
-  // Check Language Selection
-  var lang = args.lang || 'objeq'
-    , compiler = junqi[lang.toLowerCase()];
+  startCommandLine();
 
-  if ( !compiler || compiler.name !== 'languageFunction' ) {
-    errorOut("Invalid language specified '" + lang + "'");
+  function startCommandLine() {
+    // Check Language Selection
+    var lang = args.lang || 'objeq';
+    compiler = junqi[lang.toLowerCase()];
+
+    if ( !compiler || compiler.name !== 'languageFunction' ) {
+      errorOut("Invalid language specified '" + lang + "'");
+    }
+
+    // Check Query Arguments
+    if ( !args.query && !args.queryString ) {
+      errorOut("No query specified");
+    }
+    else if ( args.query && args.queryString ) {
+      errorOut("Both a query file and query string were specified");
+    }
+
+    // Read the Input Data
+    readInput();
   }
-
-  // Check Query Arguments
-  if ( !args.query && !args.queryString ) {
-    errorOut("No query specified");
-  }
-  else if ( args.query && args.queryString ) {
-    errorOut("Both a query file and query string were specified");
-  }
-
-  // Begin
-  readInput();
 
   // Reading Input JSON from File or stdin ************************************
   
   function readInput() {
     if ( args.in ) {
-      inData = JSON.parse(fs.readFileSync(args.in));
+      input = JSON.parse(fs.readFileSync(args.in));
       readQuery();
       return;
     }
     
     // Otherwise, we're reading from stdin
+    if ( process.stdin.isTTY ) {
+      errorOut("Only piped input is accepted from stdin");
+      return;
+    }
+
     var buffers = [];
     process.stdin.resume();
     process.stdin.on('data', function(data) {
@@ -61,7 +70,7 @@ function commandLine() {
     });
     
     process.stdin.on('end', function() {
-      inData = JSON.parse(Buffer.concat(buffers));
+      input = JSON.parse(Buffer.concat(buffers));
       readQuery();
     });
   }
@@ -81,19 +90,27 @@ function commandLine() {
   // Perform The Query ********************************************************
 
   function performQuery() {
-    outData = JSON.stringify(query(inData), null, 2) + '\n';
-    writeOutput();
+    var start = new Date()
+      , result = query(input)
+      , duration = new Date().getTime() - start.getTime();
+
+    output = JSON.stringify(result, null, 2) + '\n';
+    writeOutput(duration);
   }
   
   // Write Query Result *******************************************************
 
-  function writeOutput() {
+  function writeOutput(duration) {
     if ( args.out ) {
-      fs.writeFileSync(args.out, outData);
+      fs.writeFileSync(args.out, output);
     }
     else {
-      var buf = new Buffer(outData);
+      var buf = new Buffer(output);
       process.stdout.write(buf, 0, buf.length);
+    }
+    if ( args.out || process.stdout.isTTY ) {
+      console.info("---");
+      console.info("Query executed in " + duration + "ms");
     }
     process.exit(0);
   }
@@ -128,7 +145,6 @@ function commandLine() {
   }
 
   function errorOut(message) {
-    displayVersion();
     displayUsage();
     console.error("Error!");
     console.error("");
@@ -143,6 +159,7 @@ function commandLine() {
   }
 
   function displayUsage() {
+    displayVersion();
     console.info("Usage:");
     console.info("");
     console.info("  junqi (options) <query string>");
@@ -151,10 +168,10 @@ function commandLine() {
     console.info("");
     console.info("  Options:");
     console.info("");
-    console.info("    -lang <language>  - Currently 'objeq' or 'jsoniq'");
-    console.info("    -in <filename>    - Input file, otherwise use stdin");
-    console.info("    -out <filename>   - Output file, otherwise use stdout");
-    console.info("    -query <filename> - Query file, otherwise command line");
+    console.info("  -lang <language>  - Currently 'objeq' or 'jsoniq'");
+    console.info("  -in <filename>    - Input file, otherwise pipe from stdin");
+    console.info("  -out <filename>   - Output file, otherwise use stdout");
+    console.info("  -query <filename> - Query file, otherwise command line");
     console.info("");
     console.info("  Query String (if -query not provided):");
     console.info("");
