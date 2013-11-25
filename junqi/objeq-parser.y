@@ -272,7 +272,7 @@ order_list
 
 order_spec
   : expr          { $$ = yy.ascending($1); }
-  | expr ASC      { $$ = yy.descending($1); }
+  | expr ASC      { $$ = yy.ascending($1); }
   | expr DESC     { $$ = yy.descending($1); }
   ;
 

@@ -210,7 +210,7 @@ case 83: this.$ = yy.listPush($$[$0-2], $$[$0]);
 break;
 case 84: this.$ = yy.ascending($$[$0]); 
 break;
-case 85: this.$ = yy.descending($$[$0-1]); 
+case 85: this.$ = yy.ascending($$[$0-1]); 
 break;
 case 86: this.$ = yy.descending($$[$0-1]); 
 break;
