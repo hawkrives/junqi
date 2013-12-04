@@ -11,6 +11,7 @@
  * JSONiq Grammar
  */
 
+
 %lex
 
 %options case-insensitive
@@ -21,7 +22,7 @@ card  (?:[0-9]|[1-9][0-9]+)
 exp   (?:[eE][-+]?[0-9]+)
 frac  (?:\.[0-9]+)
 ws    [\s]
-ncname (?:[A-Za-z][a-zA-Z0-9\_]*)
+ncname (?:[A-Za-z][a-zA-Z0-9\_\-]*)
 %%
 
 {card}{frac}?{exp}?\b {
@@ -104,7 +105,7 @@ ncname (?:[A-Za-z][a-zA-Z0-9\_]*)
 
 program
   : expr EOF     { return $1; }
-  | EOF          { return []; }
+  | EOF          { return yy.steps(); }
   ;
 
 expr
@@ -150,7 +151,7 @@ flworTail
   ;
 
 forClause
-  : FOR VarRef forBody
+  : FOR varRef forBody
   ;
 
 forBody
@@ -159,8 +160,8 @@ forBody
   ;
 
 forParameters
-  : ALLOWING EMPTY AT VarRef IN argument
-  | AT VarRef IN argument
+  : ALLOWING EMPTY AT varRef IN argument
+  | AT varRef IN argument
   | IN argument
   | ALLOWING EMPTY IN argument
   ;
@@ -172,16 +173,16 @@ letClause
   ;
 
 letBody
-  : letBody ',' VarRef ASSIGN argument
-  | VarRef ASSIGN argument
+  : letBody ',' varRef ASSIGN argument
+  | varRef ASSIGN argument
   ;
 
 countClause
-  : COUNT VarRef
+  : COUNT varRef
   ;
 
 whereClause
-  : WHERE ExprSingle
+  : WHERE exprSingle
   ;
 
 groupByClause
@@ -189,11 +190,11 @@ groupByClause
   ;
 
 groupByBody
-  : groupByBody, VarRef ASSIGN argument
+  : groupByBody, varRef ASSIGN argument
   | groupByBody, argument
-  | groupByBody, VarRef
-  | VarRef ASSIGN argument
-  | VarRef
+  | groupByBody, varRef
+  | varRef ASSIGN argument
+  | varRef
   | argument
   ;
 
@@ -215,149 +216,132 @@ orderByType
   ;
 
 quantifiedExpr
-  : (SOME | EVERY) VarRef IN ExprSingle (',' VarRef IN ExprSingle)* SATISFIES ExprSingle
+  : SOME quantifiedBody SATISFIES exprSingle
+  | EVERY quantifiedBody SATISFIES exprSingle
+  ;
+
+quantifiedBody
+  : quantifiedBody ',' varRef IN exprSingle
+  | varRef IN exprSingle 
   ;
 
 switchExpr
-  :SWITCH '(' Expr ')' SwitchCaseClause+ DEFAULT RETURN ExprSingle
+  : SWITCH '(' expr ')' SwitchCaseClause+ DEFAULT RETURN exprSingle
   ;
 
 switchCaseClause
-  : (CASE ExprSingle)+ RETURN ExprSingle
+  : switchCaseBody RETURN exprSingle
   ;
+
+switchCaseBody
+  : switchCaseBody CASE exprSingle
+  | CASE exprSingle
+  ;
+
 ifExpr
-  : IF '(' Expr ')' 'then' ExprSingle 'else' ExprSingle
+  : IF '(' expr ')' 'then' exprSingle 'else' exprSingle
   ;
 
 tryCatchExpr
-  : TRY '{' Expr '}' CATCH '*' '{' Expr '}'
+  : TRY '{' expr '}' CATCH '*' '{' expr '}'
   ;
 
-orExpr
-  : AndExpr
-  | orExpr OR AndExpr
+orExpr   : andExpr
+  | orExpr OR andExpr { $$ = yy.node('or', $1, $3); }
   ;
 
-AndExpr 
+andExpr 
   : notExpr
-  | AndExpr AND notExpr
+  | andExpr AND notExpr { $$ = yy.node('and', $1, $3); }
   ;
 
 notExpr 
-  : NOT ComparisonExpr
-  | ComparisonExpr
+  : NOT comparisonExpr { $$ = yy.node('not', $2); }
+  | comparisonExpr
   ;
 
-ComparisonExpr
-  : StringConcatExpr
-  | StringConcatExpr EQ StringConcatExpr
-  | StringConcatExpr NE StringConcatExpr
-  | StringConcatExpr LT StringConcatExpr
-  | StringConcatExpr LE StringConcatExpr
-  | StringConcatExpr GT StringConcatExpr
-  | StringConcatExpr GE StringConcatExpr
+comparisonExpr
+  : stringConcatExpr
+  | stringConcatExpr EQ stringConcatExpr { $$ = yy.node('eq', $1, $3); }
+  | stringConcatExpr NE stringConcatExpr { $$ = yy.node('neq', $1, $3); }
+  | stringConcatExpr LT stringConcatExpr { $$ = yy.node('lt', $1, $3); }
+  | stringConcatExpr LE stringConcatExpr { $$ = yy.node('lte', $1, $3); }
+  | stringConcatExpr GT stringConcatExpr { $$ = yy.node('gt', $1, $3); }
+  | stringConcatExpr GE stringConcatExpr { $$ = yy.node('gte', $1, $3); }
   ;
 
-StringConcatExpr
-  : RangeExpr
-  | StringConcatExpr '||' RangeExpr
+stringConcatExpr
+  : rangeExpr
+  | stringConcatExpr '||' rangeExpr;
+
+rangeExpr
+  : additiveExpr
+  | additiveExpr TO additiveExpr
   ;
 
-RangeExpr
-  : AdditiveExpr
-  | AdditiveExpr TO AdditiveExpr
+additiveExpr
+  : multiplicativeExpr
+  | additiveExpr '+' multiplicativeExpr { $$ = yy.node('add', $1, $3); }
+  | additiveExpr '-' multiplicativeExpr { $$ = yy.node('sub', $1, $3); }
   ;
 
-AdditiveExpr
-  : MultiplicativeExpr
-  | AdditiveExpr '+' MultiplicativeExpr
-  | AdditiveExpr '-' MultiplicativeExpr
+multiplicativeExpr
+  : unaryExpr
+  | multiplicativeExpr '*' unaryExpr { $$ = yy.node('mul', $1, $3); }
+  | multiplicativeExpr DIV unaryExpr { $$ = yy.node('div', $1, $3); }
+  | multiplicativeExpr IDIV unaryExpr { $$ = yy.node('idiv', $1, $3); }
+  | multiplicativeExpr MOD unaryExpr { $$ = yy.node('mod', $1, $3); }
   ;
 
-MultiplicativeExpr
-  : UnaryExpr
-  | MultiplicativeExpr '*' UnaryExpr
-  | MultiplicativeExpr DIV UnaryExpr
-  | MultiplicativeExpr IDIV UnaryExpr
-  | MultiplicativeExpr MOD UnaryExpr
+unaryExpr
+  : simpleMapExpr
+  | '+' unaryExpr
+  | '-' unaryExpr %prec NEG { $$ = yy.node('neg', $2); }
   ;
 
-UnaryExpr
-  : SimpleMapExpr
-  | '+' UnaryExpr
-  | '-' UnaryExpr
-  ;
-
-SimpleMapExpr
-  : PostfixExpr
-  | SimpleMapExpr '!' PostfixExpr
-  ;
-
-PostfixExpr
+simpleMapExpr
   : argument
+  | simpleMapExpr '!' argument
   ;
 
-predicate
-  : '[' Expr ']'
-  ;
-
-objectLookup
-  : '.' ( StringLiteral | NCNAME | ParenthesizedExpr | VarRef | ContextItemExpr )
-  ;
-
-arrayLookup
-  : '[' '[' Expr ']' ']'
-  ;
-
-arrayUnboxing
-  : '[' ']'
-  ;
 
 primaryExpr
-  : Literal
-  | VarRef
-  | ParenthesizedExpr
-  | ContextItemExpr
-  | FunctionCall
-  | OrderedExpr
-  | UnorderedExpr
-  | ObjectConstructor
-  | ArrayConstructor
+  : literal
+  | varRef
+  | parenthesizedExpr
+  | contextItemExpr
+  | functionCall
+  | orderedExpr
+  | unorderedExpr
+  | objectConstructor
+  | arrayConstructor
   ;
 
 literal
-  : NumericLiteral
-  | StringLiteral
-  | BooleanLiteral
-  | NullLiteral
-  ;
-
-numericLiteral
-  : IntegerLiteral
-  | DecimalLiteral
-  | DoubleLiteral
-  ;
+  : BooleanLiteral 
+  | NullLiteral;
 
 booleanLiteral
-  : 'true'
-  | 'false'
+  : 'true' { $$ = true; }
+  | 'false' { $$ = false; }
   ;
 
 nullLiteral
-  : 'null'
+  : 'null' { $$ = null; }
   ;
 
-VarRef
-  : '$' VarRefBody
+varRef
+  : '$' varRefBody { $$ = $1 }
   ;
 
-VarRefBody 
-  : VarRefBody '.' NCNAME
-  | NCNAME
+varRefBody 
+  : varRefBody '.' NCNAME { $$ = yy.pathPush($1, $3); }
+  | NCNAME { $$ = yy.localPath($1); }
   ;
 
 parenthesizedExpr
-  : '(' Expr? ')'
+  : '(' expr ')' { $$ = $2; }
+  | '(' ')'
   ;
 
 contextItemExpr
@@ -365,22 +349,28 @@ contextItemExpr
   ;
 
 orderedExpr
-  : 'ordered' '{' Expr '}'
+  : 'ordered' '{' expr '}'
   ;
 
 unorderedExpr
-  : 'unordered' '{' Expr '}'
+  : 'unordered' '{' expr '}'
   ;
 
 functionCall
-  : NCNAME '(' argumentList ')'
+  : NCNAME '(' argumentList ')' { $$ = yy.node('func', $1, $3); }
+  | NCNAME '(' ')' { $$ = yy.node('func', $1, yy.list()); }
   ;
 
 argument
-  : Literal
-  | STRING
-  | variableChain
+  : literal { $$ = $1 }
+  | STRING { $$ = yytext; }
+  | NUMBER { $$ = Number(yytext); }
+  | variableChain { $$ = $1 }
+  | orExpr { $$ = $1 }
+  | arrayConstructor { $$ = $1 }
   ;
+
+
 
 variableChain
   : variableChainStart variableChainBody
@@ -388,37 +378,45 @@ variableChain
   ;
 
 variableChainStart
-  : functionCall
-  | VarRef
-  | contextItemExpr
+  : functionCall { $$ = yy.localPath($1); }
+  | '$' NCNAME   { $$ = yy.localPath($2); }
+  | contextItemExpr { $$ = yy.localPath($1); }
+  | parenthesizedExpr { $$ = yy.localPath($1); }
   ; 
 
 variableChainBody
-  : '.' NCNAME
-  | '[' orExpr ']'
-  | '!' contextItemExpr variableChainBody
-  | variableChainBody '[' orExpr ']'
-  | variableChainBody '.' NCNAME
-  | variableChainBody '!' contextItemExpr variableChainBody
+  : variableChainElement { $$ = yy.paramPath($1); }
+  | variableChainBody variableChainElement { $$ = yy.pathPush($1, $3); }
   ;
 
-ObjectConstructor
-  : '{' objectBody '}'
-  | '{|' Expr '|}'
+variableChainElement
+  : '(' argumentList ')'
+  | '(' ')'
+  | '.' NCNAME
+  | '[' orExpr ']'
+  | '!' contextItemExpr variableChainBody
+  ;
+
+objectConstructor
+  : '{' objectBody '}' { $$ = yy.node('obj', $2); }
+  | '{|' expr '|}'
+  | '{' '}' { $$ = yy.node('obj', yy.map()); }
   ;
 
 objectBody 
-  : objectBody ',' pairConstructor
-  | pairConstructor
+  : objectBody ',' pairConstructor { $$ = yy.mapPush($1, $3); }
+  | pairConstructor { $$ = yy.map($1); }
   ;
 
 pairConstructor
-  : NCNAME ':' argument
-  | STRING ':' argument
+  :  NCNAME ':' argument { $$ = yy.pair($1, $3); }
+  |  STRING ':' argument { $$ = yy.pair($1, $3); }
   ;
 
+
 arrayConstructor
-  : '[' Expr ']'
+  : '[' argumentList ']' { $$ = yy.node('arr', $2); }
+  | '[' ']' { $$ = yy.node('arr', yy.list()); }
   ;
 
 argumentList
