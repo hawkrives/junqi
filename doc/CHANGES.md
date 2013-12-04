@@ -1,5 +1,8 @@
 # Change History
 
+## 0.0.14 - JSONiq Support
+* Thanks to Corné Oppelaar (github/EaterOfCode), junqi now has basic JSONiq support.
+
 ## 0.0.13 - Command Line Interface
 * A very basic command line interface has been added.  It's called 'junqi' and will be installed by npm into an appropriate 'bin' directory.  Execute the command with no arguments for usage information.
 

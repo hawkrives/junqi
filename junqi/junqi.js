@@ -9,7 +9,7 @@
 // Imports
 var util = require('./util');
 
-var CURRENT_VERSION = "0.0.13"
+var CURRENT_VERSION = "0.0.14"
   , defaultLanguages = ['objeq', 'jsoniq'];
 
 var slice = Array.prototype.slice
