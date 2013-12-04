@@ -123,8 +123,8 @@ exprSingle
   ;
 
 flworExpr
-  : flworHead flworBody flworTail
-  | flworHead flworTail
+  : flworHead flworBody flworTail { $$ = [$1,$2,$3] }
+  | flworHead flworTail { $$ = [$1,$2] }
   ;
 
 flworHead
@@ -147,7 +147,7 @@ flworClause
   ;
 
 flworTail
-  : RETURN primaryExpr
+  : RETURN primaryExpr { $$  = yy.node('return',$2); }
   ;
 
 forClause
@@ -169,33 +169,35 @@ forParameters
 
 
 letClause
-  : LET letBody
+  : LET letBody { $$ = yy.node('LET',$2); }
   ;
 
 letBody
-  : letBody ',' varRef ASSIGN argument
-  | varRef ASSIGN argument
+  : letBody ',' varRef ASSIGN argument { $$ = $1; $1.push(yy.node('assign', $1, $3)); }
+  | varRef ASSIGN argument { $$ = [yy.node('assign', $1, $3)]; }
   ;
 
 countClause
-  : COUNT varRef
+  : COUNT varRef { $$ = yy.node('count',$2); }
   ;
 
 whereClause
-  : WHERE exprSingle
+  : WHERE exprSingle { $$.step('filter',$2); }
   ;
 
 groupByClause
-  : GROUP BY groupByBody
+  : GROUP BY groupByBody { $$ = yy.step('group', $2); }
   ;
 
 groupByBody
-  : groupByBody, varRef ASSIGN argument
-  | groupByBody, argument
-  | groupByBody, varRef
-  | varRef ASSIGN argument
-  | varRef
-  | argument
+  : groupByBody, groupByItem { $$ = $1; $1.push($2); }
+  | groupByItem { $$ = [$1]; }
+  ;
+
+groupByItem
+  : varRef ASSIGN argument { $$ = yy.node('assign', $1, $2); }
+  | argument { $$ = $1; }
+  | varRef { $$ = $1; }
   ;
 
 orderByClause
@@ -246,7 +248,8 @@ tryCatchExpr
   : TRY '{' expr '}' CATCH '*' '{' expr '}'
   ;
 
-orExpr   : andExpr
+orExpr
+  : andExpr
   | orExpr OR andExpr { $$ = yy.node('or', $1, $3); }
   ;
 
@@ -331,7 +334,7 @@ nullLiteral
   ;
 
 varRef
-  : '$' varRefBody { $$ = $1 }
+  : '$' varRefBody { $$ = $2 }
   ;
 
 varRefBody 
@@ -420,6 +423,6 @@ arrayConstructor
   ;
 
 argumentList
-  : argumentList ',' orExpr
-  | argument
+  : argumentList ',' orExpr { $$ = $1, $1.push($3); }
+  | argument { $$ = [$1]; }
   ;
