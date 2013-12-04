@@ -133,8 +133,8 @@ flworHead
   ;
 
 flworBody
-  : flworBody flworClause
-  | flworClause
+  : flworBody flworClause { $$ = [$1,$2]; }
+  | flworClause { $$ = [$1]; }
   ;
 
 flworClause
@@ -151,19 +151,19 @@ flworTail
   ;
 
 forClause
-  : FOR varRef forBody
+  : FOR forBody { $$ = $2 }
   ;
 
 forBody
-  : forBody ',' forParameters
-  | forParameters
+  : forBody ',' forParameters { $$ = $1; $1.push($3); }
+  | forParameters { $$ = [$1]; }
   ;
 
 forParameters
-  : ALLOWING EMPTY AT varRef IN argument
-  | AT varRef IN argument
-  | IN argument
-  | ALLOWING EMPTY IN argument
+  : varRef ALLOWING EMPTY AT varRef IN argument { $$ = yy.node('for',$1,$5,$7,true); }
+  | varRef AT varRef IN argument { $$ = yy.node('for',$1,$3,$5,false); }
+  | varRef IN argument { $$ = yy.node('for',$1,false,$3,false); }
+  | varRef ALLOWING EMPTY IN argument { $$ = yy.node('for',$1,false,$5,true); }
   ;
 
 
@@ -186,7 +186,7 @@ whereClause
   ;
 
 groupByClause
-  : GROUP BY groupByBody { $$ = yy.step('group', $2); }
+  : GROUP BY groupByBody { $$ = yy.step('group', $3); }
   ;
 
 groupByBody
@@ -376,8 +376,8 @@ argument
 
 
 variableChain
-  : variableChainStart variableChainBody
-  | variableChainStart
+  : variableChainStart variableChainBody { $$ = yy.node('variablechain',$1,$2); }
+  | variableChainStart { $$ = yy.node('variablechain',$1); }
   ;
 
 variableChainStart
@@ -389,14 +389,14 @@ variableChainStart
 
 variableChainBody
   : variableChainElement { $$ = yy.paramPath($1); }
-  | variableChainBody variableChainElement { $$ = yy.pathPush($1, $3); }
+  | variableChainBody variableChainElement { $$ = yy.pathPush($1, $2); }
   ;
 
 variableChainElement
-  : '(' argumentList ')'
+  : '(' argumentList ')' { $$ = $2; }
   | '(' ')'
-  | '.' NCNAME
-  | '[' orExpr ']'
+  | '.' NCNAME { $$ = $2; }
+  | '[' orExpr ']' { $$ = $2; }
   | '!' contextItemExpr variableChainBody
   ;
 
