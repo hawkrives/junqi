@@ -118,6 +118,13 @@ var DefaultExtensions = {
     return typeof idx !== 'undefined' ? val[idx] : val;
   },
 
+  join: function join(value, delim) {
+    if ( Array.isArray(value) ) {
+      return value.join(delim || '')
+    }
+    return value;
+  },
+
   string: String,
 
   title: function title(value) {
