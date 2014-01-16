@@ -22,43 +22,43 @@ function createCompiler(env) {
   "use strict";
 
   var Steps = Object.freeze({
-    'filter':    createFilterStep,
-    'select':    createSelectStep,
-    'expand':    createExpandStep,
-    'extend':    createExtendStep,
-    'sort':      createSortStep,
-    'group':     createGroupStep,
-    'aggregate': createAggregateStep
+    filter:    createFilterStep,
+    select:    createSelectStep,
+    expand:    createExpandStep,
+    extend:    createExtendStep,
+    sort:      createSortStep,
+    group:     createGroupStep,
+    aggregate: createAggregateStep
   });
 
-  var Expressions = Object.freeze({
-    'steps':    createStepsEvaluator,
-    'local':    createLocalPathEvaluator,
-    'param':    createParamPathEvaluator,
-    'obj':      createObjEvaluator,
-    'arr':      createArrEvaluator,
-    'subquery': createSubqueryEvaluator,
-    'func':     createFuncEvaluator,
-    'merge':    createMergeEvaluator,
-    'not':      createNotEvaluator,
-    'neg':      createNegEvaluator,
-    'and':      createAndEvaluator,
-    'or':       createOrEvaluator,
-    'add':      createAddEvaluator,
-    'sub':      createSubEvaluator,
-    'mul':      createMulEvaluator,
-    'div':      createDivEvaluator,
-    'mod':      createModEvaluator,
-    'eq':       createEqEvaluator,
-    'neq':      createNeqEvaluator,
-    'gt':       createGtEvaluator,
-    'gte':      createGteEvaluator,
-    'lt':       createLtEvaluator,
-    'lte':      createLteEvaluator,
-    'in':       createInEvaluator,
-    're':       createReEvaluator,
-    'as':       createAsEvaluator,
-    'tern':     createTernEvaluator
+  var Evaluators = Object.freeze({
+    steps:    createStepsEvaluator,
+    local:    createLocalPathEvaluator,
+    param:    createParamPathEvaluator,
+    obj:      createObjEvaluator,
+    arr:      createArrEvaluator,
+    subquery: createSubqueryEvaluator,
+    func:     createFuncEvaluator,
+    merge:    createMergeEvaluator,
+    not:      createNotEvaluator,
+    neg:      createNegEvaluator,
+    and:      createAndEvaluator,
+    or:       createOrEvaluator,
+    add:      createAddEvaluator,
+    sub:      createSubEvaluator,
+    mul:      createMulEvaluator,
+    div:      createDivEvaluator,
+    mod:      createModEvaluator,
+    eq:       createEqEvaluator,
+    neq:      createNeqEvaluator,
+    gt:       createGtEvaluator,
+    gte:      createGteEvaluator,
+    lt:       createLtEvaluator,
+    lte:      createLteEvaluator,
+    in:       createInEvaluator,
+    re:       createReEvaluator,
+    as:       createAsEvaluator,
+    tern:     createTernEvaluator
   });
 
   var getExtension = env.getExtension;
@@ -99,7 +99,7 @@ function createCompiler(env) {
     }
 
     var nodeType = node[0]
-      , createFunction = Expressions[nodeType];
+      , createFunction = Evaluators[nodeType];
 
     if ( !createFunction ) {
       throw new Error("Invalid Node in Parse Tree: " + nodeType);
