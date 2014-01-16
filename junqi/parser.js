@@ -15,7 +15,7 @@ function createParser(env) {
   var parserClasses = {}
     , parserPools = {};
 
-  var parserInterface = {
+  var parserInterface = Object.freeze({
     node: createNode,
     steps: createSteps,
     stepsPush: stepsPush,
@@ -30,14 +30,11 @@ function createParser(env) {
     map: createMap,
     mapPush: mapPush,
     pair: createPair
-  };
+  });
   
-  var parser = {
+  return Object.freeze({
     parse: parse
-  };
-
-  util.freezeObjects(parser, parserInterface);
-  return parser;
+  });
 
   // Implementation ***********************************************************
   

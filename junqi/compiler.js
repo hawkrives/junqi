@@ -6,9 +6,6 @@
  * @author Thom Bradford (github/kode4food)
  */
 
-// Imports
-var util = require('./util');
-
 var slice = Array.prototype.slice
   , isArray = Array.isArray
   , defineProperties = Object.defineProperty
@@ -24,14 +21,51 @@ var GROUP_KEY = '__junqi_group_key__'
 function createCompiler(env) {
   "use strict";
 
+  var Steps = Object.freeze({
+    'filter':    createFilterStep,
+    'select':    createSelectStep,
+    'expand':    createExpandStep,
+    'extend':    createExtendStep,
+    'sort':      createSortStep,
+    'group':     createGroupStep,
+    'aggregate': createAggregateStep
+  });
+
+  var Expressions = Object.freeze({
+    'steps':    createStepsEvaluator,
+    'local':    createLocalPathEvaluator,
+    'param':    createParamPathEvaluator,
+    'obj':      createObjEvaluator,
+    'arr':      createArrEvaluator,
+    'subquery': createSubqueryEvaluator,
+    'func':     createFuncEvaluator,
+    'merge':    createMergeEvaluator,
+    'not':      createNotEvaluator,
+    'neg':      createNegEvaluator,
+    'and':      createAndEvaluator,
+    'or':       createOrEvaluator,
+    'add':      createAddEvaluator,
+    'sub':      createSubEvaluator,
+    'mul':      createMulEvaluator,
+    'div':      createDivEvaluator,
+    'mod':      createModEvaluator,
+    'eq':       createEqEvaluator,
+    'neq':      createNeqEvaluator,
+    'gt':       createGtEvaluator,
+    'gte':      createGteEvaluator,
+    'lt':       createLtEvaluator,
+    'lte':      createLteEvaluator,
+    'in':       createInEvaluator,
+    're':       createReEvaluator,
+    'as':       createAsEvaluator,
+    'tern':     createTernEvaluator
+  });
+
   var getExtension = env.getExtension;
   
-  var compiler = {
+  return Object.freeze({
     compile: compile
-  };
-  
-  util.freezeObjects(compiler);
-  return compiler;
+  });
 
   // Implementation ***********************************************************
   
@@ -64,75 +98,21 @@ function createCompiler(env) {
       return node;
     }
 
-    // Resolving Operators
-    var op = node[0];
+    var nodeType = node[0]
+      , createFunction = Expressions[nodeType];
 
-    switch ( op ) {
-      case 'steps':
-        return createStepsEvaluator(node);
-      case 'local':
-        return createLocalPathEvaluator(node);
-      case 'param':
-        return createParamPathEvaluator(node);
-      case 'obj':
-        return createObjEvaluator(node);
-      case 'arr':
-        return createArrEvaluator(node);
-      case 'subquery':
-        return createSubqueryEvaluator(node);
-      case 'func':
-        return createFuncEvaluator(node);
-      case 'merge':
-        return createMergeEvaluator(node);
-      case 'not':
-        return createNotEvaluator(node);
-      case 'neg':
-        return createNegEvaluator(node);
-      case 'and':
-        return createAndEvaluator(node);
-      case 'or':
-        return createOrEvaluator(node);
-      case 'add':
-        return createAddEvaluator(node);
-      case 'sub':
-        return createSubEvaluator(node);
-      case 'mul':
-        return createMulEvaluator(node);
-      case 'div':
-        return createDivEvaluator(node);
-      case 'mod':
-        return createModEvaluator(node);
-      case 'eq':
-        return createEqEvaluator(node);
-      case 'neq':
-        return createNeqEvaluator(node);
-      case 'gt':
-        return createGtEvaluator(node);
-      case 'gte':
-        return createGteEvaluator(node);
-      case 'lt':
-        return createLtEvaluator(node);
-      case 'lte':
-        return createLteEvaluator(node);
-      case 'in':
-        return createInEvaluator(node);
-      case 're':
-        return createReEvaluator(node);
-      case 'as':
-        return createAsEvaluator(node);
-      case 'tern':
-        return createTernEvaluator(node);
-      default:
-        throw new Error("Invalid Node in Parse Tree: " + op);
+    if ( !createFunction ) {
+      throw new Error("Invalid Node in Parse Tree: " + nodeType);
     }
+
+    return createFunction.apply(node, node.slice(1));
   }
 
   // Step Generation **********************************************************
 
-  function createStepsEvaluator(node) {
+  function createStepsEvaluator(stepDefinitions) {
     var pipeline = [createShadowedArray]
       , plen = pipeline.length
-      , stepDefinitions = node[1]
       , processGroups = false;
 
     for ( var i = 0, ilen = stepDefinitions.length; i < ilen; i++ ) {
@@ -184,26 +164,14 @@ function createCompiler(env) {
   }
 
   function createStepEvaluator(stepDefinition) {
-    var stepType = stepDefinition[0];
+    var stepType = stepDefinition[0]
+      , createFunction = Steps[stepType];
 
-    switch ( stepType ) {
-      case 'filter':
-        return createFilterStep(stepDefinition);
-      case 'select':
-        return createSelectStep(stepDefinition);
-      case 'expand':
-        return createExpandStep(stepDefinition);
-      case 'extend':
-        return createExtendStep(stepDefinition);
-      case 'sort':
-        return createSortStep(stepDefinition);
-      case 'group':
-        return createGroupStep(stepDefinition);
-      case 'aggregate':
-        return createAggregateStep(stepDefinition);
-      default:
-        throw new Error("Invalid Step in Parse Tree: " + stepType);
+    if ( !createFunction ) {
+      throw new Error("Invalid Step in Parse Tree: " + stepType);
     }
+
+    return createFunction.apply(stepDefinition, stepDefinition.slice(1));
   }
 
   function createGroupEvaluator(evaluator) {
@@ -226,8 +194,8 @@ function createCompiler(env) {
     }
   }
 
-  function createFilterStep(stepDefinition) {
-    var filter = wrapEvaluator(stepDefinition[1]);
+  function createFilterStep(filterNode) {
+    var filter = wrapEvaluator(filterNode);
     return filterStep;
 
     function filterStep(data /* , ctx */) {
@@ -260,15 +228,14 @@ function createCompiler(env) {
     }
   }
 
-  function createSelectStep(stepDefinition) {
-    var evaluators = stepDefinition[1]
-      , select;
+  function createSelectStep(selectedNodes) {
+    var select;
     
-    if ( evaluators.length > 1 ) {
-      select = createArrEvaluator(stepDefinition);
+    if ( selectedNodes.length > 1 ) {
+      select = createArrEvaluator(selectedNodes);
     }
     else {
-      select = wrapEvaluator(evaluators[0]);
+      select = wrapEvaluator(selectedNodes[0]);
     }
     return createSelectIterator(selectStep);
 
@@ -277,8 +244,8 @@ function createCompiler(env) {
     }
   }
 
-  function createExpandStep(stepDefinition) {
-    var expand = wrapEvaluator(stepDefinition[1]);
+  function createExpandStep(expandedNode) {
+    var expand = wrapEvaluator(expandedNode);
     
     return createSelectIterator(expandStep);
 
@@ -294,8 +261,8 @@ function createCompiler(env) {
     }
   }
 
-  function createExtendStep(stepDefinition) {
-    var extend = createMergeEvaluator(stepDefinition);
+  function createExtendStep(extendedNodes) {
+    var extend = createMergeEvaluator(extendedNodes);
     return createSelectIterator(extendStep);
 
     function extendStep(obj, ctx) {
@@ -325,13 +292,12 @@ function createCompiler(env) {
     }
   }
 
-  function createSortStep(stepDefinition) {
-    var order = stepDefinition[1]
-      , olen = order.length
+  function createSortStep(orderingNodes) {
+    var olen = orderingNodes.length
       , evaluators = [];
     
     for ( var i = olen; i--; ) {
-      var orderComponent = order[i]
+      var orderComponent = orderingNodes[i]
         , evaluator = evaluators[i] = wrapEvaluator(orderComponent.expr);
       evaluator.ascending = orderComponent.ascending;
     }
@@ -369,8 +335,8 @@ function createCompiler(env) {
     }
   }
 
-  function createGroupStep(stepDefinition) {
-    var groups = wrapEvaluatorArray(stepDefinition[1])
+  function createGroupStep(groupingNodes) {
+    var groups = wrapEvaluatorArray(groupingNodes)
       , glen = groups.length;
 
     return groupStep;
@@ -410,13 +376,12 @@ function createCompiler(env) {
   }
 
   // TODO: Result can still carry forward group keys
-  function createAggregateStep(stepDefinition) {
-    var aggregate = stepDefinition[1]
-      , alen = aggregate.length
+  function createAggregateStep(extensionNames) {
+    var alen = extensionNames.length
       , extensions = [];
     
     for ( var i = alen; i--; ) {
-      extensions[i] = getExtension(aggregate[i]);
+      extensions[i] = getExtension(extensionNames[i]);
     }
     return aggregateStep;
 
@@ -452,8 +417,8 @@ function createCompiler(env) {
     return template;
   }
 
-  function createObjEvaluator(node) {
-    var template = createObjectTemplate(node[1])
+  function createObjEvaluator(objectSkeleton) {
+    var template = createObjectTemplate(objectSkeleton)
       , keys = objectKeys(template)
       , klen = keys.length;
 
@@ -470,8 +435,8 @@ function createCompiler(env) {
     }
   }
 
-  function createArrEvaluator(node) {
-    var template = wrapEvaluatorArray(node[1])
+  function createArrEvaluator(arraySkeleton) {
+    var template = wrapEvaluatorArray(arraySkeleton)
       , tlen = template.length;
 
     return arrEvaluator;
@@ -485,9 +450,9 @@ function createCompiler(env) {
     }
   }
 
-  function createSubqueryEvaluator(node) {
-    var input = wrapEvaluator(node[1])
-      , steps = createEvaluator(node[2]);
+  function createSubqueryEvaluator(inputNode, stepsNode) {
+    var input = wrapEvaluator(inputNode)
+      , steps = createEvaluator(stepsNode);
 
     return subqueryEvaluator;
 
@@ -499,9 +464,9 @@ function createCompiler(env) {
     }
   }
 
-  function createFuncEvaluator(node) {
-    var func = getExtension(node[1])
-      , template = wrapEvaluatorArray(node[2])
+  function createFuncEvaluator(funcName, argNodes) {
+    var func = getExtension(funcName)
+      , template = wrapEvaluatorArray(argNodes)
       , tlen = template.length;
 
     return funcEvaluator;
@@ -515,8 +480,8 @@ function createCompiler(env) {
     }
   }
 
-  function createMergeEvaluator(node) {
-    var template = wrapEvaluatorArray(node[1])
+  function createMergeEvaluator(mergedNodes) {
+    var template = wrapEvaluatorArray(mergedNodes)
       , tlen = template.length;
 
     return mergeEvaluator;
@@ -539,7 +504,7 @@ function createCompiler(env) {
   }
   
   function createNotEvaluator(node) {
-    var $1 = createEvaluator(node[1]);
+    var $1 = createEvaluator(node);
     return typeof $1 === 'function' ? notEvaluator : !$1;
 
     function notEvaluator(obj, ctx) {
@@ -548,7 +513,7 @@ function createCompiler(env) {
   }
 
   function createNegEvaluator(node) {
-    var $1 = createEvaluator(node[1]);
+    var $1 = createEvaluator(node);
     return typeof $1 === 'function' ? negEvaluator : -$1;
 
     function negEvaluator(obj, ctx) {
@@ -556,9 +521,9 @@ function createCompiler(env) {
     }
   }
 
-  function createAndEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createAndEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -573,9 +538,9 @@ function createCompiler(env) {
     }
   }
 
-  function createOrEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createOrEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -590,9 +555,9 @@ function createCompiler(env) {
     }
   }
 
-  function createAddEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createAddEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -605,9 +570,9 @@ function createCompiler(env) {
     }
   }
 
-  function createSubEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createSubEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -620,9 +585,9 @@ function createCompiler(env) {
     }
   }
 
-  function createMulEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createMulEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -635,9 +600,9 @@ function createCompiler(env) {
     }
   }
 
-  function createDivEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createDivEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -650,9 +615,9 @@ function createCompiler(env) {
     }
   }
 
-  function createModEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createModEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -665,9 +630,9 @@ function createCompiler(env) {
     }
   }
 
-  function createEqEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createEqEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -680,9 +645,9 @@ function createCompiler(env) {
     }
   }
 
-  function createNeqEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createNeqEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -695,9 +660,9 @@ function createCompiler(env) {
     }
   }
 
-  function createGtEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createGtEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -710,9 +675,9 @@ function createCompiler(env) {
     }
   }
 
-  function createGteEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createGteEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -725,9 +690,9 @@ function createCompiler(env) {
     }
   }
 
-  function createLtEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createLtEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -740,9 +705,9 @@ function createCompiler(env) {
     }
   }
 
-  function createLteEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createLteEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -755,9 +720,9 @@ function createCompiler(env) {
     }
   }
 
-  function createInEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createInEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -779,9 +744,9 @@ function createCompiler(env) {
     }
   }
 
-  function createReEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createReEvaluator(leftNode, rightNode) {
+    var $1 = createEvaluator(leftNode)
+      , $2 = createEvaluator(rightNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function';
 
@@ -810,9 +775,9 @@ function createCompiler(env) {
     }
   }
 
-  function createAsEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
+  function createAsEvaluator(exprNode, paramName) {
+    var $1 = createEvaluator(exprNode)
+      , $2 = createEvaluator(paramName)
       , $1_func = typeof $1 === 'function';
 
     return asEvaluator;
@@ -824,10 +789,10 @@ function createCompiler(env) {
     }
   }
 
-  function createTernEvaluator(node) {
-    var $1 = createEvaluator(node[1])
-      , $2 = createEvaluator(node[2])
-      , $3 = createEvaluator(node[3])
+  function createTernEvaluator(conditionNode, trueNode, falseNode) {
+    var $1 = createEvaluator(conditionNode)
+      , $2 = createEvaluator(trueNode)
+      , $3 = createEvaluator(falseNode)
       , $1_func = typeof $1 === 'function'
       , $2_func = typeof $2 === 'function'
       , $3_func = typeof $3 === 'function';
@@ -863,9 +828,7 @@ function createCompiler(env) {
     }
   }
 
-  function createLocalPathEvaluator(node) {
-    var pathComponents = node[1];
-
+  function createLocalPathEvaluator(pathComponents) {
     return createPathEvaluator(localPathRootEvaluator, pathComponents);
 
     function localPathRootEvaluator(obj /* , ctx */) {
@@ -873,9 +836,8 @@ function createCompiler(env) {
     }
   }
 
-  function createParamPathEvaluator(node) {
-    var pathComponents = node[1]
-      , param = pathComponents[0];
+  function createParamPathEvaluator(pathComponents) {
+    var param = pathComponents[0];
 
     return createPathEvaluator(paramPathRootEvaluator, pathComponents);
 
