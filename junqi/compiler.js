@@ -25,6 +25,8 @@ var GROUP_KEY = '__junqi_group_key__'
 function createCompiler(env) {
   "use strict";
 
+  var getExtension = env.getExtension;
+
   var Steps = Object.freeze({
     filter:    createFilterStep,
     select:    createSelectStep,
@@ -65,8 +67,6 @@ function createCompiler(env) {
     tern:     createTernEvaluator
   });
 
-  var getExtension = env.getExtension;
-  
   return Object.freeze({
     compile: compile
   });
@@ -367,6 +367,7 @@ function createCompiler(env) {
           if ( j === glen - 1 ) {
             target = target[key] = [];
             target.ctx = extendObject({}, elemCtx);
+            target.keys = objectKeys(target.ctx);
           }
           else {
             target = target[key] = {};
@@ -375,10 +376,11 @@ function createCompiler(env) {
 
         // remove non-common parameters from group context
         var targetCtx = target.ctx
-          , keys = objectKeys(targetCtx);
-        for ( var k = keys.length; k--; ) {
-          key = keys[k];
+          , targetKeys = target.keys;
+        for ( var k = targetKeys.length; k--; ) {
+          key = targetKeys[k];
           if ( targetCtx[key] !== elemCtx[key] ) {
+            targetKeys.splice(k, 1);
             delete targetCtx[key];
           }
         }
