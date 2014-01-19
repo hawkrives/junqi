@@ -27,6 +27,11 @@ exports.groups = nodeunit.testCase({
   },
 
   "Grouping Aggregation Works": function (test) {
+    test.equal(objeq(this.data,
+      "group firstName as %firstName := count " +
+      "select { firstName: %firstName, count: this }")[0].firstName, 'Thom',
+      "Group key return is correct");
+
     test.equal(objeq(this.data, "group firstName := count")[0], 2,
       "Single-level grouped count is correct");
 
