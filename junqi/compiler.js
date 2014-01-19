@@ -402,7 +402,6 @@ function createCompiler(env) {
     }
   }
 
-  // TODO: Result can still carry forward group keys
   function createAggregateStep(extensionNames) {
     var alen = extensionNames.length
       , extensions = [];
