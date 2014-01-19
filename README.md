@@ -74,7 +74,7 @@ This module defines both a Lexer and Grammar that use the [Jison Parser Generato
 The objeq grammar was originally developed by Thomas Bradford and Stefano Rago for [Agilo Software GmbH](http://www.agilosoftware.com/).  The objeq library can be found at [GitHub](http://github.com/agilosoftware/objeq)
 
 ## License (MIT License)
-Copyright (c) 2013 Thomas S. Bradford
+Copyright (c) 2013-2014 Thomas S. Bradford
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

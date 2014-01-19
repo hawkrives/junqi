@@ -6,11 +6,15 @@
  * @author Thom Bradford (github/kode4food)
  */
 
+// Imports
+var util = require('./util');
+
 var slice = Array.prototype.slice
   , isArray = Array.isArray
   , defineProperties = Object.defineProperty
   , extendContext = Object.create
-  , objectKeys = Object.keys;
+  , objectKeys = Object.keys
+  , extendObject = util.extendObject;
 
 // The nextGroupKey must be global since an Object may participate in
 // multiple junqi environments.
@@ -184,7 +188,7 @@ function createCompiler(env) {
           , subset = data[key];
 
         if ( isArray(subset) ) {
-          data[key] = evaluator(subset, ctx);
+          data[key] = evaluator(subset, subset.ctx);
         }
         else {
           data[key] = groupEvaluator(subset, ctx);
@@ -351,15 +355,38 @@ function createCompiler(env) {
           , elemCtx = elem.ctx;
 
         for ( var j = 0; j < glen; j++ ) {
-          var key = getGroupKey(groups[j](obj, elemCtx));
-          
+          var key = getGroupKey(groups[j](obj, elemCtx))
+            , tmp = target[key];
+
+          if ( tmp ) {
+            target = tmp;
+            continue;
+          }
+
           // leaf nodes are arrays, branches are objects
-          target = target[key] || (target[key] = ( j === glen - 1 ? [] : {} ));
+          if ( j === glen - 1 ) {
+            target = target[key] = [];
+            target.ctx = extendObject({}, elemCtx);
+          }
+          else {
+            target = target[key] = {};
+          }
         }
 
+        filterCommonContext(target.ctx, elemCtx);
         target.push(elem);
       }
       return result;
+    }
+
+    function filterCommonContext(commonCtx, sourceCtx) {
+      var keys = objectKeys(commonCtx);
+      for ( var i = keys.length; i--; ) {
+        var key = keys[i];
+        if ( commonCtx[key] !== sourceCtx[key] ) {
+          delete commonCtx[key];
+        }
+      }
     }
 
     function getGroupKey(obj) {
