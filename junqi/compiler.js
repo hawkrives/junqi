@@ -373,20 +373,19 @@ function createCompiler(env) {
           }
         }
 
-        filterCommonContext(target.ctx, elemCtx);
+        // remove non-common parameters from group context
+        var targetCtx = target.ctx
+          , keys = objectKeys(targetCtx);
+        for ( var k = keys.length; k--; ) {
+          key = keys[k];
+          if ( targetCtx[key] !== elemCtx[key] ) {
+            delete targetCtx[key];
+          }
+        }
+
         target.push(elem);
       }
       return result;
-    }
-
-    function filterCommonContext(commonCtx, sourceCtx) {
-      var keys = objectKeys(commonCtx);
-      for ( var i = keys.length; i--; ) {
-        var key = keys[i];
-        if ( commonCtx[key] !== sourceCtx[key] ) {
-          delete commonCtx[key];
-        }
-      }
     }
 
     function getGroupKey(obj) {
