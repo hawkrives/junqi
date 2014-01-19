@@ -188,7 +188,7 @@ function createCompiler(env) {
           , subset = data[key];
 
         if ( isArray(subset) ) {
-          data[key] = evaluator(subset, subset.ctx);
+          data[key] = evaluator(subset, subset._ctx);
         }
         else {
           data[key] = groupEvaluator(subset, ctx);
@@ -345,7 +345,7 @@ function createCompiler(env) {
 
     return groupStep;
 
-    function groupStep(data /* , ctx */) {
+    function groupStep(data, ctx) {
       var result = {};
 
       for ( var i = 0, ilen = data.length; i < ilen; i++ ) {
@@ -366,8 +366,8 @@ function createCompiler(env) {
           // leaf nodes are arrays, branches are objects
           if ( j === glen - 1 ) {
             target = target[key] = [];
-            target.ctx = extendObject({}, elemCtx);
-            target.keys = objectKeys(target.ctx);
+            target._ctx = extendObject(extendContext(ctx), elemCtx);
+            target._keys = objectKeys(elemCtx);
           }
           else {
             target = target[key] = {};
@@ -375,8 +375,8 @@ function createCompiler(env) {
         }
 
         // remove non-common parameters from group context
-        var targetCtx = target.ctx
-          , targetKeys = target.keys;
+        var targetCtx = target._ctx
+          , targetKeys = target._keys;
         for ( var k = targetKeys.length; k--; ) {
           key = targetKeys[k];
           if ( targetCtx[key] !== elemCtx[key] ) {
