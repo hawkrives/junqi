@@ -1,6 +1,17 @@
 # Change History
 
 ## 0.0.14 - JSONiq Support
+* Any symbols created using the 'AS' operator whose value is common to all elements of a group will be passed forward through subsequent steps.  This is particularly useful for aggregation.  Example:
+
+```
+group by lastName as %lastName
+aggregate count
+select {
+  lastName: %lastName,
+  count: this
+}
+```
+
 * Thanks to Corné Oppelaar (github/EaterOfCode), junqi now has basic JSONiq support.
 
 ## 0.0.13 - Command Line Interface
