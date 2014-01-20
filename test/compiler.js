@@ -27,14 +27,19 @@ exports.compiler = nodeunit.testCase({
     var query = objeq(function(color) {/*
       # this is an example of a compiled function body comment
       where %color in colors
+      group by fullName
       select {
         fullName, 
-        colors: colors[1]
+        colors: colors[1],
+        chosen: %color
       }
     */});
     
     test.equal(query(this.data, 'red')[3].colors, "green",
       "Function Body Comments compile");
+
+    test.equal(query(this.data, 'red')[3].chosen, "red",
+      "Parameters passed through all steps");
 
     test.done();
   }
