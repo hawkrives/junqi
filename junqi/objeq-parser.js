@@ -130,7 +130,7 @@ case 31: this.$ = yy.node('lte', $$[$0-2], $$[$0]);
 break;
 case 32: this.$ = yy.node('in', $$[$0-2], $$[$0]); 
 break;
-case 33: this.$ = yy.node('as', $$[$0-2], $$[$0]); 
+case 33: this.$ = yy.node('assign', $$[$0], $$[$0-2]); 
 break;
 case 34: this.$ = yy.node('not', $$[$0]); 
 break;

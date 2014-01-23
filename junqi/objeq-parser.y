@@ -175,7 +175,7 @@ expr
   | expr LT expr       { $$ = yy.node('lt', $1, $3); }
   | expr LTE expr      { $$ = yy.node('lte', $1, $3); }
   | expr IN expr       { $$ = yy.node('in', $1, $3); }
-  | expr AS PARAM      { $$ = yy.node('as', $1, $3); }
+  | expr AS PARAM      { $$ = yy.node('assign', $3, $1); }
   | NOT expr           { $$ = yy.node('not', $2); }
   | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'       { $$ = $2; }
