@@ -104,13 +104,13 @@ ncname (?:[A-Za-z][a-zA-Z0-9\_\-]*)
 %% /* Parser Grammar */
 
 program
-  : expr EOF     { return $1; }
-  | EOF          { return yy.steps(); }
+  : expr EOF     { return yy.node('arr', $1); }
+  | EOF          { return yy.node('arr', yy.list()); }
   ;
 
 expr
-  : expr ',' exprSingle     { $$ = $1; $1.push($2); }
-  | exprSingle              { $$ = [$1]; }
+  : expr ',' exprSingle     { $$ = $1; yy.listPush($1, $3); }
+  | exprSingle              { $$ = yy.list($1); }
   ;
 
 exprSingle
@@ -166,15 +166,17 @@ forParameters
   | varRef ALLOWING EMPTY IN argument { $$ = yy.node('for',$1,false,$5,true); }
   ;
 
-
-
 letClause
-  : LET letBody { $$ = yy.node('LET',$2); }
+  : LET letBody { $$ = $2; }
   ;
 
 letBody
-  : letBody ',' varRef ASSIGN argument { $$ = $1; $1.push(yy.node('assign', $1, $3)); }
-  | varRef ASSIGN argument { $$ = [yy.node('assign', $1, $3)]; }
+  : letBody ',' letTail  { $$ = yy.listPush($1, $3); }
+  | letTail              { $$ = yy.list($1); }
+  ;
+
+letTail
+  : varRef ASSIGN argument  { $$ = yy.node('assign', $1, $3); }
   ;
 
 countClause
@@ -190,14 +192,14 @@ groupByClause
   ;
 
 groupByBody
-  : groupByBody, groupByItem { $$ = $1; $1.push($2); }
-  | groupByItem { $$ = [$1]; }
+  : groupByBody ',' groupByItem  { $$ = yy.pushList($1, $3); }
+  | groupByItem                  { $$ = yy.list($1); }
   ;
 
 groupByItem
   : varRef ASSIGN argument { $$ = yy.node('assign', $1, $2); }
-  | argument { $$ = $1; }
-  | varRef { $$ = $1; }
+  | argument
+  | varRef
   ;
 
 orderByClause
@@ -275,7 +277,8 @@ comparisonExpr
 
 stringConcatExpr
   : rangeExpr
-  | stringConcatExpr '||' rangeExpr;
+  | stringConcatExpr '||' rangeExpr  { $$ = yy.node('add', $1, $3); }
+  ;
 
 rangeExpr
   : additiveExpr
@@ -306,7 +309,6 @@ simpleMapExpr
   : argument
   | simpleMapExpr '!' argument
   ;
-
 
 primaryExpr
   : literal
@@ -372,8 +374,6 @@ argument
   | orExpr { $$ = $1 }
   | arrayConstructor { $$ = $1 }
   ;
-
-
 
 variableChain
   : variableChainStart variableChainBody { $$ = yy.node('variablechain',$1,$2); }
