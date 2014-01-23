@@ -1,7 +1,7 @@
 var nodeunit = require('nodeunit')
-  , objeq = require('../junqi').objeq;
+  , objeq = require('../../junqi').objeq;
 
-exports.arrays = nodeunit.testCase({
+exports.subqueries = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "fullName": "Thom Bradford", "colors": ['red', 'green', 'blue'] },
@@ -23,11 +23,24 @@ exports.arrays = nodeunit.testCase({
     callback();
   },
 
-  "Array Access Works": function (test) {
-    var query = "where 'red' in colors -> { fullName, colors: colors[1] }";
-    test.equal(objeq(this.data, query)[3].colors, "green",
-      "Array-indexed Value returned is correct");
+  "Subqueries Work": function (test) {
+    var query = objeq(function(favorite) {/*
+     # if someone has %favorite as a color, return only the other colors
+     where %favorite in colors
+     select {
+       fullName,
+       colors: [colors where this != %favorite]
+     }
+    */});
 
+    var result = query(this.data, 'red');
+    
+    test.equal(result[2].fullName, "Jed Clampet", 
+      "Main query filtering is correct");
+
+    test.equal(result[2].colors[0], "green",
+      "Subquery filtering is correct");
+    
     test.done();
   }
 });

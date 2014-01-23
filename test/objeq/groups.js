@@ -1,7 +1,10 @@
 var nodeunit = require('nodeunit')
-  , objeq = require('../junqi').objeq;
+  , objeq = require('../../junqi').objeq;
 
-exports.selections = nodeunit.testCase({
+// Load the Standard Extensions
+require('../../extensions');
+
+exports.groups = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -23,28 +26,21 @@ exports.selections = nodeunit.testCase({
     callback();
   },
 
-  "Selections Work": function (test) {
-    var query = "-> { firstName, fullName: firstName + ' ' + lastName }";
-    test.equal(objeq(this.data, query)[0].firstName, "Thom",
-      "Field of Object Literal exists");
+  "Grouping Aggregation Works": function (test) {
+    test.equal(objeq(this.data,
+      "group firstName as %firstName := count " +
+      "select { firstName: %firstName, count: this }")[0].firstName, 'Thom',
+      "Group key return is correct");
 
-    test.equal(objeq(this.data, query)[0].fullName, "Thom Bradford",
-      "Expression Field of Object Literal exists");
-    
-    test.equal(objeq(this.data, query)[0].lastName, null,
-      "Field of Object Literal does not exist");
+    test.equal(objeq(this.data, "group firstName := count")[0], 2,
+      "Single-level grouped count is correct");
 
-    test.done();
-  },
-  
-  "Extend Works": function (test) {
-    var query = "|> this, { fullName: firstName + ' ' + lastName }";
-    test.equal(objeq(this.data, query)[0].fullName, 'Thom Bradford',
-      "Extended Field exists");
-    
-    test.equal(objeq(this.data, query)[0].lastName, 'Bradford',
-      "Original Field exists");
-    
+    test.equal(objeq(this.data, "group lastName, firstName := count")[0], 2,
+      "Nested grouped count is correct");
+
+    test.equal(objeq(this.data, "group lastName + firstName := count")[0], 2,
+      "Expression-based grouped count is correct");
+
     test.done();
   }
 });

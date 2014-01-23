@@ -1,10 +1,7 @@
 var nodeunit = require('nodeunit')
-  , objeq = require('../junqi').objeq;
+  , objeq = require('../../junqi').objeq;
 
-// Load the Standard Extensions
-require('../extensions');
-
-exports.aggregates = nodeunit.testCase({
+exports.selections = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -26,20 +23,28 @@ exports.aggregates = nodeunit.testCase({
     callback();
   },
 
-  "Single Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg")[0], 44.785714285714285,
-      "Average Age is correct");
+  "Selections Work": function (test) {
+    var query = "-> { firstName, fullName: firstName + ' ' + lastName }";
+    test.equal(objeq(this.data, query)[0].firstName, "Thom",
+      "Field of Object Literal exists");
 
-    test.equal(objeq(this.data, "-> age := sum")[0], 627,
-      "Sum of Ages is correct");
+    test.equal(objeq(this.data, query)[0].fullName, "Thom Bradford",
+      "Expression Field of Object Literal exists");
+    
+    test.equal(objeq(this.data, query)[0].lastName, null,
+      "Field of Object Literal does not exist");
 
     test.done();
   },
-
-  "Chained Aggregations Work": function (test) {
-    test.equal(objeq(this.data, "-> age := avg, round")[0], 45,
-      "Rounded Average Age is correct");
-
+  
+  "Extend Works": function (test) {
+    var query = "|> this, { fullName: firstName + ' ' + lastName }";
+    test.equal(objeq(this.data, query)[0].fullName, 'Thom Bradford',
+      "Extended Field exists");
+    
+    test.equal(objeq(this.data, query)[0].lastName, 'Bradford',
+      "Original Field exists");
+    
     test.done();
   }
 });

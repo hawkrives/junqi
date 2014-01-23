@@ -1,5 +1,5 @@
 var nodeunit = require('nodeunit')
-  , objeq = require('../junqi').objeq;
+  , objeq = require('../../junqi').objeq;
 
 exports.predicates = nodeunit.testCase({
   setUp: function (callback) {

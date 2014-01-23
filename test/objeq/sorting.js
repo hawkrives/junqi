@@ -1,10 +1,7 @@
 var nodeunit = require('nodeunit')
-  , objeq = require('../junqi').objeq;
+  , objeq = require('../../junqi').objeq;
 
-// Load the Standard Extensions
-require('../extensions');
-
-exports.groups = nodeunit.testCase({
+exports.sorting = nodeunit.testCase({
   setUp: function (callback) {
     this.data = [
       { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -26,20 +23,12 @@ exports.groups = nodeunit.testCase({
     callback();
   },
 
-  "Grouping Aggregation Works": function (test) {
-    test.equal(objeq(this.data,
-      "group firstName as %firstName := count " +
-      "select { firstName: %firstName, count: this }")[0].firstName, 'Thom',
-      "Group key return is correct");
+  "Sorting Works": function (test) {
+    test.equal(objeq(this.data, "by lastName -> lastName")[0], 'Ash',
+      "Ascending sort is correct");
 
-    test.equal(objeq(this.data, "group firstName := count")[0], 2,
-      "Single-level grouped count is correct");
-
-    test.equal(objeq(this.data, "group lastName, firstName := count")[0], 2,
-      "Nested grouped count is correct");
-
-    test.equal(objeq(this.data, "group lastName + firstName := count")[0], 2,
-      "Expression-based grouped count is correct");
+    test.equal(objeq(this.data, "by lastName desc -> lastName")[0], 'Williams',
+      "Descending sort is correct");
 
     test.done();
   }
