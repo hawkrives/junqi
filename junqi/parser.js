@@ -17,6 +17,8 @@ function createParser(env) {
 
   var parserInterface = Object.freeze({
     node: createNode,
+    block: createBlock,
+    blockPush: blockPush,
     steps: createSteps,
     stepsPush: stepsPush,
     step: createStep,
@@ -94,6 +96,17 @@ function createParser(env) {
     return result;
   }
 
+  function createBlock() {
+    var result = ['block', util.makeArray(arguments)];
+    result.isNode = true;
+    return result;
+  }
+
+  function blockPush(block, stmt) {
+    block[1].push(stmt);
+    return block;
+  }
+
   function createSteps() {
     var result = ['steps', util.makeArray(arguments)];
     result.isNode = true;
@@ -112,19 +125,20 @@ function createParser(env) {
   }
   
   function createLocalPath() {
-    var result = ['local', [null].concat(util.makeArray(arguments))];
+    var result = ['local', util.makeArray(arguments)];
     result.isNode = true;
     return result;
   }
 
-  function createParamPath() {
-    var result = ['param', util.makeArray(arguments)];
+  function createParamPath(param) {
+    var result = ['param', param, util.makeArray(arguments, 1)];
     result.isNode = true;
     return result;
   }
 
   function pathPush(path, component) {
-    path[1].push(component);
+    var lastIdx = path.length - 1;
+    path[lastIdx].push(component);
     return path;
   }
 
