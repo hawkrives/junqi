@@ -10,8 +10,8 @@ var slice = Array.prototype.slice
   , splice = Array.prototype.splice
   , objectKeys = Object.keys;
 
-function makeArray(arr) {
-  return slice.call(arr, 0);
+function makeArray(arr, index) {
+  return slice.call(arr, index || 0);
 }
 
 function mergeArrays(arr1, arr2) {
@@ -38,6 +38,7 @@ function extendObject(target) {
   }
   return target;
 }
+
 
 // Exports
 exports.makeArray = makeArray;
