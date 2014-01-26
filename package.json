@@ -11,7 +11,7 @@
   },
   "keywords": ["javascript", "json", "query", "language", "server", "nodejs"],
   "contributors": [
-    { "name": "Thom Bradford", "email": "thom@kode4food.it" },
+    { "name": "Thom Bradford", "email": "thom@kode4food.it" }
   ],
   "repository": {
     "type": "git",
