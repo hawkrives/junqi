@@ -180,7 +180,7 @@ expr
   | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'       { $$ = $2; }
   | ternary            
-  | func
+  | call
   | path
   | literal
   ;
@@ -189,9 +189,9 @@ ternary
   : expr '?' expr ':' expr     { $$ = yy.node('tern', $1, $3, $5); }
   ;
 
-func
-  : IDENT '(' expr_list ')'     { $$ = yy.node('func', $1, $3); }
-  | IDENT '(' ')'               { $$ = yy.node('func', $1, yy.list()); }
+call
+  : IDENT '(' expr_list ')'     { $$ = yy.node('call', $1, $3); }
+  | IDENT '(' ')'               { $$ = yy.node('call', $1, yy.list()); }
   ;
 
 path

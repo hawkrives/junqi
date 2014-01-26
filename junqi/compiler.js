@@ -45,7 +45,7 @@ function createCompiler(env) {
     obj:      createObjEvaluator,
     arr:      createArrEvaluator,
     subquery: createSubqueryEvaluator,
-    func:     createFuncEvaluator,
+    call:     createCallEvaluator,
     merge:    createMergeEvaluator,
     not:      createNotEvaluator,
     neg:      createNegEvaluator,
@@ -510,14 +510,14 @@ function createCompiler(env) {
     }
   }
 
-  function createFuncEvaluator(funcName, argNodes) {
+  function createCallEvaluator(funcName, argNodes) {
     var func = getExtension(funcName)
       , template = wrapEvaluatorArray(argNodes)
       , tlen = template.length;
 
-    return funcEvaluator;
+    return callEvaluator;
 
-    function funcEvaluator(obj, ctx) {
+    function callEvaluator(obj, ctx) {
       var funcArgs = [];
       for ( var i = 0; i < tlen; i++ ) {
         funcArgs[i] = template[i](obj, ctx);

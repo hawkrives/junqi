@@ -11,14 +11,14 @@
   },
   "keywords": ["javascript", "json", "query", "language", "server", "nodejs"],
   "contributors": [
-    { "name": "Thom Bradford", "email": "thom@kode4food.it" }
+    { "name": "Thom Bradford", "email": "thom@kode4food.it" },
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/kode4food/junqi.git"
   },
   "scripts": {
-    "build": "jison -m commonjs junqi/objeq-parser.y -o junqi/objeq-parser.js && jison -m commonjs junqi/jsoniq-parser.y -o junqi/jsoniq-parser.js && nodeunit test"
+    "build": "jison -m commonjs junqi/objeq-parser.y -o junqi/objeq-parser.js && nodeunit test"
   },
   "dependencies": {
   },

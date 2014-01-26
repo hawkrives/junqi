@@ -1,6 +1,6 @@
-# The Junqi Compiler
+# The junqi Compiler
 
-The Junqi compiler accepts a tree of abstract syntax nodes and yields a single JavaScript closure to service the query represented by the tree.  Internally, this closure is a nested set of closures rather than a dynamically generated function using eval or the Function constructor.
+The junqi compiler accepts a tree of abstract syntax nodes and yields a single JavaScript closure to service the query represented by the tree.  Internally, this closure is a nested set of closures rather than a dynamically generated function using eval or the Function constructor.
 
 There were several reasons for generating closures instead of concatenating JavaScript code:
 
@@ -8,13 +8,13 @@ There were several reasons for generating closures instead of concatenating Java
 
   * Security: Because queries compile down to a set of closures rather than strings to be evaluated, the risk of injection attacks is minimized.
 
-  * Performance: The first rule of optimization?  Don't optimize.  That said, under V8, Junqi queries still perform quite well compared to code that is dynamically generated.
+  * Performance: The first rule of optimization?  Don't optimize.  That said, under V8, junqi queries still perform quite well compared to code that is dynamically generated.
 
 A future version of the junqi compiler may end up producing dynamic code, but this won't happen until the compiler interface has first stabilized.
 
 ## Abstract Syntax Tree
 
-The tree that is passed to the Junqi compiler consists of nested arrays with additional metadata.  The first array element is a token that designates the evaluator being represented and subsequent elements represent arguments to be passed into that evaluator's internal constructor.  For example, this expression:
+The tree that is passed to the junqi compiler consists of nested arrays with additional metadata.  The first array element is a token that designates the evaluator being represented and subsequent elements represent arguments to be passed into that evaluator's internal constructor.  For example, this expression:
 
 ```javascript
 5 * 10 + 15 / 3
@@ -31,7 +31,7 @@ Might yield the following syntax tree:
 
 **Note:** Each of these arrays also has a property called `isNode` with a value of true.  This allows junqi to distinguish between a syntax node and a literal array.  The junqi parser interface methods will attach this property automatically when functions like `yy.node()` are called.
 
-Junqi attempts to roll literals up wherever possible, so the previous syntax tree might produce a closure equivalent to the following:
+junqi attempts to roll literals up wherever possible, so the previous syntax tree might produce a closure equivalent to the following:
 
 ```javascript
 function $1(obj, ctx) {
@@ -133,11 +133,11 @@ Synthesizes a new array based on the set of evaluators.  For example, this objeq
 ]]
 ```
 
-### func(funcName, argNodes\[Evaluator\])
+### call(funcName, argNodes\[Evaluator\])
 Calls an extension function registered with the junqi environment.  Arbitary method calling is not permitted in junqi, and so the funcName can only be evaluated as a String.  For example, a call to `area(width, height)` would yield the following syntax tree:
 
 ```javascript
-['func', 'area', [
+['call', 'area', [
   ['local', ['width']],
   ['local', ['height']]
 ]]
@@ -247,7 +247,7 @@ Comparitive equality of the provided nodes.
 
 ```javascript
 ['eq',
-  ['func', 'count', [
+  ['call', 'count', [
     ['local', ['children']]
   ]],
   10
@@ -259,7 +259,7 @@ Comparitive inequality of the provided nodes.
 
 ```javascript
 ['neq',
-  ['func', 'count', [
+  ['call', 'count', [
     ['local', ['children']]
   ]],
   ['param', 'ignoreCount']
@@ -268,31 +268,84 @@ Comparitive inequality of the provided nodes.
 
 ### gt(leftNode, rightNode)
 leftNode greater than rightNode.
-// TODO: Example
+
+```javascript
+['gt',
+  ['call', 'count', [
+    ['local', ['children']]
+  ]],
+  ['param', 'ignoreCount']
+]
+```
+
 
 ### gte(leftNode, rightNode)
 leftNode greater than or equal to rightNode.
-// TODO: Example
+
+```javascript
+['gte',
+  ['call', 'count', [
+    ['local', ['children']]
+  ]],
+  ['param', 'ignoreCount']
+]
+```
 
 ### lt(leftNode, rightNode)
 leftNode less than rightNode.
-// TODO: Example
+
+```javascript
+['lt',
+  ['call', 'count', [
+    ['local', ['children']]
+  ]],
+  ['param', 'ignoreCount']
+]
+```
 
 ### lte(leftNode, rightNode)
 leftNode less than or equal to rightNode.
-// TODO: Example
+
+```javascript
+['lte',
+  ['call', 'count', [
+    ['local', ['children']]
+  ]],
+  ['param', 'ignoreCount']
+]
+```
 
 ### in(elemNode, setNode)
 elemNode is an element of (or is equal to) setNode.
-// TODO: Example
+
+```javascript
+['in',
+  ['local', ['color']],
+  ['arr', ['red', 'green', 'blue']]
+]
+```
+
 
 ### re(regexNode, testNode)
 testNode matches the regular expression defined by regexNode, returning true or false.
-// TODO: Example
+
+```javascript
+['re',
+  ['local', ['name']],
+  '^B.*'
+]
+```
 
 ### tern(conditionNode, trueNode, falseNode)
 Returns evaluation of trueNode if conditionNode returns 'truthy,' otherwise returns evaluation of falseNode.
-// TODO: Example
+
+```javascript
+['tern',
+  ['local', ['active']],
+  'is active',
+  'is not active'
+]
+```
 
 ### assign(paramName, exprNode)
 Stores the result of exprNode into the current query evaluation context as 'paramName,' and then passes that same result up the stack.

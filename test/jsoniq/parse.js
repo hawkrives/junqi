@@ -17,7 +17,7 @@ exports.parse = nodeunit.testCase({
     var parser = parserModule.createParser(junqi.createJunqiEnvironment())
       , parseTree = parser.parse('jsoniq', query);
 
-    console.log(util.inspect(parseTree, { colors: true, depth: null}));
+    //console.log(util.inspect(parseTree, { colors: true, depth: null}));
 
     test.done();
   }

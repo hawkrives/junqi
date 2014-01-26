@@ -10,7 +10,7 @@
 var util = require('./util');
 
 var CURRENT_VERSION = "0.0.14"
-  , defaultLanguages = ['objeq', 'jsoniq'];
+  , defaultLanguages = ['objeq'];
 
 var slice = Array.prototype.slice
   , isArray = Array.isArray

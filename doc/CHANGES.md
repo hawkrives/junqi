@@ -1,6 +1,6 @@
 # Change History
 
-## 0.0.14 - JSONiq Support
+## 0.0.14 - More Useful Grouping
 * Any symbols created using the 'AS' operator whose value is common to all elements of a group will be passed forward through subsequent steps.  This is particularly useful for aggregation.  Example:
 
 ```
@@ -12,12 +12,10 @@ select {
 }
 ```
 
-* Thanks to Corné Oppelaar (github/EaterOfCode), junqi now has basic JSONiq support.
-
 ## 0.0.13 - Command Line Interface
 * A very basic command line interface has been added.  It's called 'junqi' and will be installed by npm into an appropriate 'bin' directory.  Execute the command with no arguments for usage information.
 
-## 0.0.12 - Objeq Subquery Support
+## 0.0.12 - objeq Subquery Support
 * Comments can now be included in an objeq query.  A Comment starts with a number sign (#) and continues to the end of the current line.
 * Queries can now be nested using a variant of the Array Literal syntax.  For example:
 
@@ -167,4 +165,4 @@ this as %parent <: children -> {
 * The architecture has been further modularized to support the type of work we'll be doing, specifically trying to make it easier to introduce a grammar without it infecting the entire code-base.
 
 ## 0.0.1 - Initial Release
-* Objeq grammar is implemented, JSONiq grammar is not
+* objeq grammar is implemented, JSONiq grammar is not
