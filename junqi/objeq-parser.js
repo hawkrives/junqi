@@ -74,7 +74,7 @@
 var objeqParser = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"query":3,"steps":4,"EOF":5,"leading_step":6,"trailing_step":7,"non_filter_step":8,"leading_filter":9,"THEN":10,"trailing_filter":11,"WHERE":12,"expr":13,"sorter":14,"grouper":15,"selector":16,"aggregator":17,"+":18,"-":19,"*":20,"/":21,"%":22,"AND":23,"OR":24,"EQ":25,"NEQ":26,"RE":27,"GT":28,"GTE":29,"LT":30,"LTE":31,"IN":32,"AS":33,"PARAM":34,"NOT":35,"(":36,")":37,"ternary":38,"func":39,"path":40,"literal":41,"?":42,":":43,"IDENT":44,"expr_list":45,"THIS":46,"ARGREF":47,".":48,"[":49,"]":50,"NUMBER":51,"STRING":52,"TRUE":53,"FALSE":54,"NULL":55,"UNDEFINED":56,"array":57,"obj":58,"subquery":59,"trailing_steps":60,",":61,"{":62,"obj_items":63,"}":64,"obj_item":65,"obj_key_literal":66,"EXPAND":67,"SELECT":68,"EXTEND":69,"ORDER_BY":70,"order_list":71,"order_spec":72,"ASC":73,"DESC":74,"GROUP_BY":75,"AGGREGATE":76,"aggr_list":77,"$accept":0,"$end":1},
+symbols_: {"error":2,"query":3,"steps":4,"EOF":5,"leading_step":6,"trailing_step":7,"non_filter_step":8,"leading_filter":9,"THEN":10,"trailing_filter":11,"WHERE":12,"expr":13,"sorter":14,"grouper":15,"selector":16,"aggregator":17,"+":18,"-":19,"*":20,"/":21,"%":22,"AND":23,"OR":24,"EQ":25,"NEQ":26,"RE":27,"GT":28,"GTE":29,"LT":30,"LTE":31,"IN":32,"AS":33,"PARAM":34,"NOT":35,"(":36,")":37,"ternary":38,"call":39,"path":40,"literal":41,"?":42,":":43,"IDENT":44,"expr_list":45,"THIS":46,"ARGREF":47,".":48,"[":49,"]":50,"NUMBER":51,"STRING":52,"TRUE":53,"FALSE":54,"NULL":55,"UNDEFINED":56,"array":57,"obj":58,"subquery":59,"trailing_steps":60,",":61,"{":62,"obj_items":63,"}":64,"obj_item":65,"obj_key_literal":66,"EXPAND":67,"SELECT":68,"EXTEND":69,"ORDER_BY":70,"order_list":71,"order_spec":72,"ASC":73,"DESC":74,"GROUP_BY":75,"AGGREGATE":76,"aggr_list":77,"$accept":0,"$end":1},
 terminals_: {2:"error",5:"EOF",10:"THEN",12:"WHERE",18:"+",19:"-",20:"*",21:"/",22:"%",23:"AND",24:"OR",25:"EQ",26:"NEQ",27:"RE",28:"GT",29:"GTE",30:"LT",31:"LTE",32:"IN",33:"AS",34:"PARAM",35:"NOT",36:"(",37:")",42:"?",43:":",44:"IDENT",46:"THIS",47:"ARGREF",48:".",49:"[",50:"]",51:"NUMBER",52:"STRING",53:"TRUE",54:"FALSE",55:"NULL",56:"UNDEFINED",60:"trailing_steps",61:",",62:"{",64:"}",67:"EXPAND",68:"SELECT",69:"EXTEND",70:"ORDER_BY",73:"ASC",74:"DESC",75:"GROUP_BY",76:"AGGREGATE"},
 productions_: [0,[3,2],[3,1],[4,1],[4,2],[6,1],[6,1],[7,2],[7,1],[7,1],[9,2],[9,1],[11,2],[11,2],[8,1],[8,1],[8,1],[8,1],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,3],[13,2],[13,2],[13,3],[13,1],[13,1],[13,1],[13,1],[38,5],[39,4],[39,3],[40,1],[40,1],[40,1],[40,1],[40,3],[40,4],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[41,1],[57,4],[57,3],[57,2],[59,1],[59,2],[45,1],[45,3],[58,3],[58,2],[63,1],[63,3],[66,1],[66,1],[66,1],[66,1],[66,1],[66,1],[65,3],[65,3],[65,1],[16,2],[16,2],[16,2],[14,2],[71,1],[71,3],[72,1],[72,2],[72,2],[15,2],[17,2],[77,1],[77,3]],
 performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* action[1] */, $$ /* vstack */, _$ /* lstack */) {
@@ -140,9 +140,9 @@ case 36: this.$ = $$[$0-1];
 break;
 case 41: this.$ = yy.node('tern', $$[$0-4], $$[$0-2], $$[$0]); 
 break;
-case 42: this.$ = yy.node('func', $$[$0-3], $$[$0-1]); 
+case 42: this.$ = yy.node('call', $$[$0-3], $$[$0-1]); 
 break;
-case 43: this.$ = yy.node('func', $$[$0-2], yy.list()); 
+case 43: this.$ = yy.node('call', $$[$0-2], yy.list()); 
 break;
 case 44: this.$ = yy.localPath(); 
 break;
