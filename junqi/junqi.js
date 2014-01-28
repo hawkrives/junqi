@@ -124,6 +124,13 @@ function createJunqiEnvironment(languages, autoRegister) {
 
   function registerLanguage(language) {
     languageFunctions[language] = languageFunction;
+
+    // Create Convenience Wrappers
+    languageFunction.first = createConvenienceWrapper(first);
+    languageFunction.last = createConvenienceWrapper(last);
+    languageFunction.len = createConvenienceWrapper(len);
+    languageFunction.exists = createConvenienceWrapper(exists);
+
     return languageFunction;
 
     function languageFunction() {
@@ -148,6 +155,39 @@ function createJunqiEnvironment(languages, autoRegister) {
         registerExtension(functionName, compiled);
       }
       return compiled;
+    }
+
+    function createConvenienceWrapper(extractionFunction) {
+      return convenienceWrapper;
+
+      function convenienceWrapper() {
+        var result = languageFunction.apply(this, arguments);
+        if ( typeof result !== 'function' ) {
+          return extractionFunction(result);
+        }
+        return extractionWrapper;
+
+        function extractionWrapper() {
+          return extractionFunction(result.apply(this, arguments));
+        }
+      }
+    }
+
+    function first(result) {
+      return result[0];
+    }
+
+    function last(result) {
+      var len = result.length;
+      return len ? result[len-1] : null;
+    }
+
+    function len(result) {
+      return result.length;
+    }
+
+    function exists(result) {
+      return result.length > 0;
     }
   }
 
