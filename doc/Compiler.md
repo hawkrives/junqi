@@ -325,7 +325,6 @@ elemNode is an element of (or is equal to) setNode.
 ]
 ```
 
-
 ### re(regexNode, testNode)
 testNode matches the regular expression defined by regexNode, returning true or false.
 
