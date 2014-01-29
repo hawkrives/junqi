@@ -15,15 +15,30 @@ var fs = require('fs')
 // Standard Extensions
 require('../extensions');
 
-commandLine();
+var slice = Array.prototype.slice;
+
+if ( require.main === module ) {
+  commandLine.apply(null, slice.call(process.argv, 2));
+}
 
 // Command Line Processing ****************************************************
 
+/**
+ * Executes a junqi command-line operation.  Each argument is treated as
+ * it would be had it come from the operating system's shell and should
+ * be a string.  This function is normally invoked automatically when the
+ * cli.js script is called directly.
+ *
+ * Example:
+ *   commandLine("-lang", "objeq", "-in", "test.json", "where" "active");
+ *
+ * @param {...String} [arguments] usage info displayed if no args provided
+ */
 function commandLine() {
   "use strict";
 
   var compiler, input, query, output
-    , args = parseArguments();
+    , args = parseArguments(arguments);
 
   startCommandLine();
 
@@ -117,21 +132,20 @@ function commandLine() {
 
   // Support Functions ********************************************************
 
-  function parseArguments() {
+  function parseArguments(passedArguments) {
     var optionRegex = /^-([a-zA-Z_][a-zA-Z_0-9]*)$/
-      , argv = process.argv
       , result = { }
       , queryStrings = [];
 
-    for ( var i = 2, len = argv.length; i < len; ) {
-      var arg = argv[i++];
+    for ( var i = 0, len = passedArguments.length; i < len; ) {
+      var arg = passedArguments[i++];
       var match = optionRegex.exec(arg);
       if ( match ) {
         if ( queryStrings.length ) {
           errorOut("Options must appear before a query string");
         }
         var argName = match[1]
-          , argValue = i < len ? argv[i++] : null;
+          , argValue = i < len ? passedArguments[i++] : null;
         result[argName] = argValue;
       }
       else {
@@ -179,3 +193,6 @@ function commandLine() {
     console.info("");
   }
 }
+
+// Exports
+exports.commandLine = commandLine;

@@ -9,6 +9,13 @@
 // Imports
 var util = require('./util');
 
+/**
+ * Creates a junqi parser interface using the junqi environment object
+ * passed to it.
+ *
+ * @param {Object} env - a junqi environment
+ * @returns {Object} the parser interface methods
+ */
 function createParser(env) {
   "use strict";
   
@@ -35,11 +42,42 @@ function createParser(env) {
   });
   
   return Object.freeze({
+    isParserAvailable: isParserAvailable,
     parse: parse
   });
 
   // Implementation ***********************************************************
-  
+
+  /**
+   * Returns whether or not the specified language is recognized by this
+   * parser interface.
+   *
+   * @param {String} language - the language name
+   * @returns {Boolean} whether or not the language is recognized
+   */
+  function isParserAvailable(language) {
+    var ParserClass = parserClasses[language];
+    if ( ParserClass ) {
+      return true;
+    }
+
+    try {
+      parserClasses[language] = loadLanguageParser(language);
+      return true;
+    }
+    catch ( err ) {
+      return false;
+    }
+  }
+
+  /**
+   * Parses a query using the specified language, generating a parse tree
+   * that can be handed to the junqi compiler.
+   *
+   * @param {String} language - the language ('objeq', 'jsoniq', etc...)
+   * @param {String} queryString - the query to be parsed
+   * @returns {Array} a parse tree
+   */
   function parse(language, queryString) {
     // Get a Parser from the pool, if possible
     var parserPool = parserPools[language] || (parserPools[language] = [])
