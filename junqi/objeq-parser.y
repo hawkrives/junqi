@@ -154,8 +154,8 @@ trailing_filter
 
 non_filter_step
   : sorter
-  | selector
   | grouper
+  | selector
   | aggregator
   ;
 
