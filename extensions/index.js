@@ -81,7 +81,7 @@ var DefaultExtensions = {
     }
     for ( var i = 0, res = 0, l = value.length; i < l; res += value[i++] );
     return res;
-},
+  },
 
   // Array Extensions *********************************************************
 
@@ -102,9 +102,9 @@ var DefaultExtensions = {
 
   empty: function empty(value) {
     if ( !isArray(value) ) {
-      return value == null;
+      return typeof value === 'undefined' || value === null;
     }
-    return value.length > 0;
+    return !value.length;
   },
 
   // String Extensions ********************************************************
@@ -120,7 +120,7 @@ var DefaultExtensions = {
 
   join: function join(value, delim) {
     if ( Array.isArray(value) ) {
-      return value.join(delim || '')
+      return value.join(delim || '');
     }
     return value;
   },
