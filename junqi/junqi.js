@@ -9,57 +9,69 @@
 // Imports
 var util = require('./util');
 
-var CURRENT_VERSION = "0.0.14"
+var CURRENT_VERSION = "0.0.15"
   , defaultLanguages = ['objeq'];
 
 var slice = Array.prototype.slice
   , isArray = Array.isArray
-  , objectKeys = Object.keys;
+  , objectKeys = Object.keys
+  , objectFreeze = Object.freeze;
 
 var funcRegex = /^function\s*([^\(]*)\(([^\)]*)\)\s*\{\s*(\/\*([\s\S]*)\*\/)?/m
   , argNameSplitRegex = /\s*,\s*/m
   , commentPrefixRegex = /^(\s*\*\s+)?(.*)$/;
 
+/**
+ * Creates a new junqi environment.  A junqi environment is a container for
+ * a set of registered languages and extensions.  This module represents the
+ * default junqi environment, but new ones can be created to limit the
+ * languages available or that will automatically register any compiled
+ * queries as extensions.
+ *
+ * @param {String[]} [languages] the supported languages (['objeq', 'jsoniq'])
+ * @param {boolean} [autoRegister] register compiled queries as extensions
+ * @returns {Object} the junqi environment interface
+ */
 function createJunqiEnvironment(languages, autoRegister) {
   "use strict";
   
   if ( typeof languages === 'boolean' ) {
     autoRegister = languages;
-    languages = undefined;
+    languages = defaultLanguages;
   }
-  
-  if ( typeof languages === 'string' ) {
+  else if ( typeof languages === 'undefined' ) {
+    languages = defaultLanguages;
+  }
+  else if ( !isArray(languages) ) {
     languages = [languages];
   }
-  
+
   var languageFunctions = {}
     , extensions = {};
 
-  var env = {
+  var env = objectFreeze({
     getExtension: getExtension
-  };
+  });
   
   var parser = require('./parser').createParser(env)
     , compiler = require('./compiler').createCompiler(env);
-  
+
+  // Standard interface
   junqi.junqi = junqi;
   junqi.VERSION = CURRENT_VERSION;
+  junqi.supportedLanguages = objectFreeze(slice.call(languages, 0));
   junqi.createJunqiEnvironment = createJunqiEnvironment;
   junqi.registerExtension = registerExtension;
   junqi.registerExtensions = registerExtensions;
+  junqi.getExtension = getExtension;
 
   // Register the supported language functions
-  var supportedLanguages = defaultLanguages;
-  if ( isArray(languages) ) {
-    supportedLanguages = languages;
-  }
-
-  for ( var i = supportedLanguages.length; i--; ) {
-    var language = supportedLanguages[i];
+  for ( var i = languages.length; i--; ) {
+    var language = languages[i];
     junqi[language] = registerLanguage(language);
   }
 
-  util.freezeObjects(env, junqi, languageFunctions);
+  util.freezeObjects(junqi, languageFunctions);
   return junqi;
 
   // Implementation ***********************************************************
@@ -123,8 +135,19 @@ function createJunqiEnvironment(languages, autoRegister) {
   }
 
   function registerLanguage(language) {
+    if ( !parser.isParserAvailable(language) ) {
+      throw new Error("Parser for '" + language + "' not available");
+    }
+
     languageFunctions[language] = languageFunction;
-    return languageFunction;
+
+    // Create Convenience Wrappers
+    languageFunction.first = createConvenienceWrapper(first);
+    languageFunction.last = createConvenienceWrapper(last);
+    languageFunction.len = createConvenienceWrapper(len);
+    languageFunction.exists = createConvenienceWrapper(exists);
+
+    return objectFreeze(languageFunction);
 
     function languageFunction() {
       var processed = processArguments(util.makeArray(arguments))
@@ -148,6 +171,39 @@ function createJunqiEnvironment(languages, autoRegister) {
         registerExtension(functionName, compiled);
       }
       return compiled;
+    }
+
+    function createConvenienceWrapper(extractionFunction) {
+      return convenienceWrapper;
+
+      function convenienceWrapper() {
+        var result = languageFunction.apply(this, arguments);
+        if ( typeof result !== 'function' ) {
+          return extractionFunction(result);
+        }
+        return extractionWrapper;
+
+        function extractionWrapper() {
+          return extractionFunction(result.apply(this, arguments));
+        }
+      }
+    }
+
+    function first(result) {
+      return result[0];
+    }
+
+    function last(result) {
+      var len = result.length;
+      return len ? result[len-1] : null;
+    }
+
+    function len(result) {
+      return result.length;
+    }
+
+    function exists(result) {
+      return result.length > 0;
     }
   }
 

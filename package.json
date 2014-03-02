@@ -2,7 +2,7 @@
   "name": "junqi",
   "description": "JavaScript Object Querying",
   "author": "Thomas S. Bradford",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "license": "MIT",
   "homepage": "http://www.junqi.io/",
   "main": "index.js",
@@ -18,7 +18,7 @@
     "url": "https://github.com/kode4food/junqi.git"
   },
   "scripts": {
-    "build": "jison -m commonjs junqi/objeq-parser.y -o junqi/objeq-parser.js && nodeunit test"
+    "build": "jison -m commonjs junqi/objeq-parser.y -o junqi/objeq-parser.js && nodeunit test/*"
   },
   "dependencies": {
   },
