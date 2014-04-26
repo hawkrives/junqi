@@ -8,6 +8,7 @@
 
 // Imports
 var util = require('./util');
+var objeq = require('./objeq-parser');
 
 /**
  * Creates a junqi parser interface using the junqi environment object
@@ -104,7 +105,8 @@ function createParser(env) {
     }
 
     try {
-      mod = require('./' + language + '-parser');
+      // mod = require('./' + language + '-parser');
+      mod = objeq;
     }
     catch ( err ) {
       throw new Error("Language '" + language + "' not supported");
